@@ -6,6 +6,5 @@ title = "Thoth Baboon"
 
 [Github](https://github.com/thothbaboon) &nbsp;&nbsp;&nbsp; [Email](0xthothbaboon@gmail.com) &nbsp;&nbsp;&nbsp; [Medium](https://medium.com/@thothbaboon) &nbsp;&nbsp;&nbsp; [X](https://x.com/thothbaboon)
 
-Hi!  
-
-I'm a software engineer who sometimes I enjoy writing blog posts instead of writing code.
+*The scribe who watches is the baboon who learns.  
+Knowledge is not the ink upon the page but the eye that discerns its truth.*

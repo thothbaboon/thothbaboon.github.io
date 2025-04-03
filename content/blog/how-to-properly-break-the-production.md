@@ -1,7 +1,7 @@
 +++
 title = "How to Properly Break the Production"
 description = "Most software engineers are capable of breaking the production. But are you able to do it like a pro?"
-date = 2025-02-27
+date = 2024-08-10
 +++
 
 Most software engineers are capable of breaking the production. But are you able to do it like a pro?
