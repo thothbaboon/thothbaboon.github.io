@@ -1,5 +1,5 @@
 +++
-title = "Advent of Code 2024 Day 16 Part 2 Explained, Using Dijkstra"
+title = "Advent of Code 2024 Day 16 Part 2 Explained - Using Dijkstra"
 description = "Detailled explaination of how I solved the part 2 of day 16 for AoC 2024 using Dijkstra algorithm, with a link to my Rust implementation."
 date = 2025-04-04
 +++
