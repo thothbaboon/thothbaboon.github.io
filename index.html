@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <title></title>
+    
+    <link rel="stylesheet" href="https://thothbaboon.github.io/style.css?h=501c6ea82db27d74ea03">
+    
+    
+        
+    
+</head>
+<body>
+    
+    <header class="space">
+        <h1></h1>
+        
+        
+    </header>
+    
+    
+    
+    
+    <main>
+        
+        <div class="space">
+            <h1 id="thothbaboon">thothbaboon</h1>
+<p><a href="https://github.com/thothbaboon">Github</a>     <a href="https://thothbaboon.github.io/0xthothbaboon@gmail.com">Email</a>     <a href="https://medium.com/@thothbaboon">Medium</a>     <a href="https://x.com/thothbaboon">X</a></p>
+<p><em>The scribe who watches is the baboon who learns.<br />
+Knowledge is not the ink upon the page but the eye that discerns its truth.</em></p>
+
+        </div>
+        
+        
+        <h2>Recent posts</h2>
+        <ul>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;advent-of-code-2024-day-17-part-2-explained&#x2F;">Advent of Code 2024 Day 17 Part 2 Explained - Chronospatial Computer</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;advent-of-code-2024-day-16-part-2-explained-using-dijkstra&#x2F;">Advent of Code 2024 Day 16 Part 2 Explained - Using Dijkstra</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;how-to-properly-break-the-production&#x2F;">How to Properly Break the Production</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;bitcoin-vs-digital-euro&#x2F;">Bitcoin vs Digital Euro</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;an-introduction-to-digital-euro&#x2F;">An Introduction to Digital Euro</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;how-i-saved-one-month-of-work-to-an-entire-squad&#x2F;">How I Saved One Month of Work to an Entire Squad</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;master-the-repository-pattern&#x2F;">Master the Repository Pattern</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;langchain-agent-tool-monitoring-and-usage-limiting&#x2F;">Langchain Agent tool monitoring and usage limiting</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;give-chatgpt-access-to-linkedin-llm-agent-custom-tools&#x2F;">Give ChatGPT Access to LinkedIn: LLM Agent Custom Tools</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;the-only-way-to-manage-errors-in-typescript&#x2F;">The Only Way to Manage Errors in Typescript</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;authentication-with-ethereum-and-metamask-in-a-dapp&#x2F;">Authentication with Ethereum and Metamask in a dApp</a></li>
+            
+            <li><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;mnemonic-seeds&#x2F;">Mnemonic Seeds</a></li>
+            
+        </ul>
+        <p><a href="https:&#x2F;&#x2F;thothbaboon.github.io&#x2F;blog&#x2F;">Archive</a></p>
+        
+    </main>
+    
+    
+    <div class="dark-mode-buttons">
+        <button class="dark-mode-button" id="dark-mode-on"><img src="https://thothbaboon.github.io/dark_mode.svg" width="24" height="24" alt="Dark mode" aria-label="dark mode toggle" title="Dark mode"></button>
+        <button class="dark-mode-button" id="dark-mode-off"><img src="https://thothbaboon.github.io/light_mode.svg" width="24" height="24" alt="Light mode" aria-label="light mode toggle" title="Light mode"></button>
+    </div>
+    <script>
+        const cls = document.querySelector("html").classList;
+        const sessionTheme = sessionStorage.getItem("theme");
+
+        function setDark() {
+            cls.add("dark-mode");
+            cls.remove("light-mode");
+            sessionStorage.setItem("theme", "dark");
+        }
+        function setLight() {
+            cls.add("light-mode");
+            cls.remove("dark-mode");
+            sessionStorage.setItem("theme", "light");
+        }
+
+        if (sessionTheme === "dark") {
+            setDark();
+        } else if (sessionTheme === "light") {
+            setLight();
+        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            setDark();
+        }
+
+        document.getElementById("dark-mode-on").addEventListener("click", function(e) {
+            setDark();
+        });
+        document.getElementById("dark-mode-off").addEventListener("click", function(e) {
+            setLight();
+        });
+    </script>
+    <noscript>
+        <style>
+            .dark-mode-buttons {
+                display: none;
+            }
+        </style>
+    </noscript>
+</body>
+</html>
