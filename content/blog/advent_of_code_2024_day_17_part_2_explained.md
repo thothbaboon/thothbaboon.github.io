@@ -46,8 +46,8 @@ Or written in code:
 
 ```rust
 while a > 0 {
-	a = a / 8;
-	println!("{}", A % 8);
+    a = a / 8;
+    println!("{}", A % 8);
 }
 ```
 
@@ -138,7 +138,7 @@ Or written in code:
 
 ```rust
 while a > 0 {
-	b = (a % 8) ^ 1;
+    b = (a % 8) ^ 1;
     c = a.div(2_usize.pow(b as u32));
     b = b ^ c;
     a = a / 8
@@ -193,7 +193,7 @@ fn run_instructions(a: usize) -> usize {
 for aaa in 0..8 {
     let output = run_instructions(aaa);
     if output == 0 {
-	    println!("{} -> {}", aaa, output);
+        println!("{} -> {}", aaa, output);
     }
 }
 
@@ -215,8 +215,8 @@ for bbb in 0..8 {
     let a = 7 << 3 | bbb; // one possibility for aaabbb
     let output = run_instructions(a);
     if output == 3 {
-	    println!("{} -> {}", a, output);
-	}
+        println!("{} -> {}", a, output);
+    }
 }
 
  // 56 -> 3
