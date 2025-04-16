@@ -1,0 +1,589 @@
+@import "theme";
+
+html {
+    font-size: 16px;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: var(--header-bg);
+    padding: 1.5rem 2rem;
+    position: relative;
+    top: 0;
+    backdrop-filter: blur(8px);
+    z-index: 10;
+    box-shadow: 0 1px 3px var(--shadow);
+    
+    h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+}
+
+main {
+    max-width: 800px;
+    width: 100%;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    flex-grow: 1;
+}
+
+.header-links {
+    a {
+        margin-right: 1rem;
+        font-weight: 500;
+        
+        &:last-of-type {
+            margin-right: 0;
+        }
+    }
+}
+
+.space {
+    margin-bottom: 2rem;
+}
+
+.doublespace {
+    margin-bottom: 4rem;
+}
+
+.small {
+    font-size: 0.875rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    line-height: 1.3;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 2rem;
+    margin-top: 0;
+}
+
+h2 {
+    font-size: 1.5rem;
+    border-bottom: 1px solid var(--tertiary);
+    padding-bottom: 0.5rem;
+}
+
+h3 {
+    font-size: 1.25rem;
+}
+
+h4 {
+    font-size: 1.1rem;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    display: block;
+    margin: 1.5rem 0;
+    box-shadow: 0 3px 6px var(--shadow);
+}
+
+p {
+    margin: 1rem 0;
+}
+
+ul, ol {
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+    
+    li {
+        margin-bottom: 0.5rem;
+    }
+}
+
+.footnote-definition {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+
+    p {
+        display: inline;
+    }
+}
+
+.footnotes {
+    margin-top: 4rem;
+    padding-top: 1rem;
+}
+
+.footnotes-list {
+    font-size: 0.875rem;
+}
+
+// Code blocks styling enhancement
+pre {
+    margin: 1.5rem 0;
+    
+    &[data-language]::before {
+        content: attr(data-language);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--secondary);
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+}
+
+// Post listing
+ul.post-list {
+    list-style: none;
+    padding: 0;
+    
+    li {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background-color: var(--card-bg);
+        border-radius: 6px;
+        box-shadow: 0 2px 4px var(--shadow);
+        transition: transform 0.2s ease;
+        
+        &:hover {
+            transform: translateY(-2px);
+        }
+        
+        a {
+            display: block;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .post-date {
+            font-size: 0.875rem;
+            color: var(--secondary);
+        }
+    }
+}
+
+@media all and (max-width: 900px) {
+    main {
+        padding: 0 1.5rem;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+}
+
+@media all and (max-width: 600px) {
+    header {
+        padding: 1rem;
+    }
+    
+    main {
+        padding: 0 1rem;
+        margin: 1.5rem auto;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.3rem;
+    }
+}
+
+// Post styling
+.post {
+    .post-header {
+        margin-bottom: 2rem;
+
+        .post-title {
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    .post-meta {
+        color: var(--secondary);
+        font-size: 0.875rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+        
+        .post-taxonomies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            
+            .taxonomy-group {
+                display: inline-flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                
+                .taxonomy-name {
+                    font-weight: 500;
+                }
+                
+                .taxonomy-term {
+                    color: var(--accent);
+                }
+            }
+        }
+    }
+    
+    .post-content {
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 2rem;
+        }
+        
+        img {
+            margin: 2rem auto;
+        }
+        
+        // Improved code block styling for tech blog
+        pre {
+            border-left: 3px solid var(--accent);
+            
+            code {
+                font-family: 'Fira Code', monospace;
+                tab-size: 4;
+            }
+        }
+        
+        :not(pre) > code {
+            font-family: 'Fira Code', monospace;
+        }
+    }
+}
+
+// Post listing improvements
+.post-list {
+    li {
+        .post-description {
+            margin-top: 0.5rem;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+    }
+}
+
+.archive-link {
+    text-align: right;
+    margin-top: 1rem;
+    font-weight: 500;
+    
+    a {
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+// Header improvements
+header {
+    h1 a {
+        color: var(--foreground);
+        text-decoration: none;
+        
+        &:hover {
+            text-decoration: none;
+        }
+    }
+    
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1000px;
+        margin: 0 auto;
+        
+        h1 {
+            margin: 0;
+        }
+    }
+    
+    .home-link {
+        font-weight: 500;
+    }
+}
+
+// Footer styling
+footer {
+    background-color: var(--card-bg);
+    padding: 1.5rem 0;
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--secondary);
+    border-top: 1px solid var(--tertiary);
+    
+    .footer-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        
+        p {
+            margin: 0;
+        }
+    }
+}
+
+// Section and archive styling
+.section-header {
+    margin-bottom: 2rem;
+    
+    h1 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .section-description {
+        color: var(--secondary);
+        font-size: 1.1rem;
+        margin: 0;
+    }
+}
+
+.section-content {
+    margin-bottom: 3rem;
+}
+
+.archive {
+    .archive-year {
+        margin-bottom: 3rem;
+        
+        &:last-child {
+            margin-bottom: 0;
+        }
+        
+        h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+            border-bottom: 1px solid var(--tertiary);
+            padding-bottom: 0.5rem;
+        }
+    }
+}
+
+// Syntax highlighting for dark theme
+.z-code {
+    position: relative;
+    color: var(--code-fg);
+    
+    // Make sure syntax elements are colored consistently
+    .z-punctuation, .z-operator, .z-bracket, .z-paren {
+        color: var(--code-fg);
+    }
+    
+    .z-language {
+        position: absolute;
+        top: 0;
+        right: 0;
+        color: var(--secondary);
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+        text-transform: uppercase;
+        font-weight: 500;
+        opacity: 0.7;
+    }
+    
+    // Syntax highlighting colors for dark theme
+    .z-comment, .z-quote {
+        color: #a0aec0;
+    }
+    
+    .z-keyword, .z-selector-tag, .z-addition {
+        color: #63b3ed;
+    }
+    
+    .z-number, .z-string, .z-meta .z-meta-string, .z-literal, .z-doctag, .z-regexp {
+        color: #68d391;
+    }
+    
+    .z-title, .z-section, .z-name, .z-selector-id, .z-selector-class {
+        color: #f6ad55;
+    }
+    
+    .z-attribute, .z-attr, .z-variable, .z-template-variable, .z-class .z-title, .z-type {
+        color: #fc8181;
+    }
+    
+    .z-symbol, .z-bullet, .z-subst, .z-meta, .z-meta .z-keyword, .z-selector-attr, .z-selector-pseudo, .z-link {
+        color: #b794f4;
+    }
+    
+    .z-built_in, .z-deletion {
+        color: #4fd1c5;
+    }
+    
+    .z-punctuation, .z-operator, .z-bracket, .z-paren {
+        color: #cbd5e0;
+    }
+}
+
+// Fix for agola-dark theme styling - more targeted approach
+pre[style*="background-color:#2b303b"] {
+    background-color: var(--code-bg) !important;
+    
+    code {
+        color: var(--code-fg) !important;
+    }
+    
+    // Don't force all spans to use the same color
+    span:not([style]) {
+        color: var(--code-fg) !important;
+    }
+    
+    // For styled spans, just ensure they're visible with minimum brightness
+    span[style*="color"] {
+        // Keep their color but ensure it has minimum contrast
+        &[style*="#c0c5ce"] {
+            color: var(--code-fg) !important;
+        }
+    }
+}
+
+// Fix code blocks in post content
+.post-content {
+    pre {
+        position: relative;
+        
+        code {
+            font-family: 'Fira Code', monospace;
+            tab-size: 4;
+            color: var(--code-fg);
+        }
+    }
+    
+    :not(pre) > code {
+        font-family: 'Fira Code', monospace;
+        color: var(--code-fg);
+    }
+}
+
+// Responsive adjustments for smaller screens
+@media all and (max-width: 600px) {
+    .archive {
+        .archive-year {
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    }
+    
+    .section-header {
+        .section-description {
+            font-size: 1rem;
+        }
+    }
+    
+    footer {
+        .footer-content {
+            padding: 0 1rem;
+        }
+    }
+}
+
+// Taxonomy styling
+.taxonomy-header {
+    margin-bottom: 2rem;
+    
+    h1 {
+        margin-bottom: 0.5rem;
+        
+        .term-name {
+            color: var(--accent);
+            font-weight: 700;
+        }
+    }
+}
+
+.taxonomy-list {
+    display: grid;
+    gap: 2.5rem;
+    
+    .taxonomy-item {
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px var(--shadow);
+        
+        h2 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.4rem;
+            border-bottom: none;
+            
+            a {
+                color: var(--accent);
+                text-decoration: none;
+                
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+        
+        .taxonomy-count {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            margin-bottom: 1.5rem;
+        }
+    }
+}
+
+// Smaller post lists for taxonomies
+.post-list.small-list {
+    li {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        
+        &:last-child {
+            margin-bottom: 0;
+        }
+        
+        a {
+            font-size: 1rem;
+        }
+        
+        &.view-more {
+            background-color: transparent;
+            box-shadow: none;
+            text-align: right;
+            padding: 0.5rem 0 0 0;
+            
+            a {
+                font-size: 0.875rem;
+                font-weight: 500;
+            }
+        }
+    }
+}
+
+// Responsive adjustments for taxonomy pages
+@media all and (max-width: 600px) {
+    .taxonomy-list {
+        .taxonomy-item {
+            padding: 1.25rem;
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+        }
+    }
+}

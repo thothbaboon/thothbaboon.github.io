@@ -1,0 +1,60 @@
+{% extends "index.html" %}
+
+{% block title %}{{ config.title }} | {{ page.title }}{% endblock title %}
+{% block description %}{{ page.description | default(value=config.description) }}{% endblock description %}
+
+{% block header %}
+<header>
+    <div class="header-content">
+        <h1><a href="{{ config.base_url }}">{{ config.title }}</a></h1>
+        <nav class="header-links">
+            <a href="{{ config.base_url }}" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+{% endblock header %}
+
+{% block content %}
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">{{ page.title }}</h1>
+            
+            {% if page.date or page.taxonomies %}
+            <div class="post-meta">
+                {% if page.date %}
+                <time datetime="{{ page.date | date(format='%Y-%m-%d') }}" class="post-date">
+                    {{ page.date | date(format="%B %d, %Y") }}
+                </time>
+                {% endif %}
+
+                {% set_global sorted_taxonomies = [] %}
+                {% for taxonomy_name, _ in page.taxonomies %}
+                {% set_global sorted_taxonomies = sorted_taxonomies | concat(with=taxonomy_name) %}
+                {% endfor %}
+                {% set_global sorted_taxonomies = sorted_taxonomies | sort %}
+
+                {% if page.taxonomies %}
+                <div class="post-taxonomies">
+                {% for taxonomy_name in sorted_taxonomies %}
+                {% set terms = page.taxonomies[taxonomy_name] %}
+                <span class="taxonomy-group">
+                    <span class="taxonomy-name">{{ taxonomy_name | capitalize }}:</span>
+                    {% for term_name in terms %}
+                    {% set term = get_taxonomy_term(kind=taxonomy_name, term=term_name) %}
+                    <a href="{{ term.permalink }}" class="taxonomy-term">{{ term.name }}</a>{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                </span>
+                {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </header>
+        
+        <div class="post-content">
+            {{ page.content | safe }}
+        </div>
+    </article>
+</main>
+{% endblock content %}

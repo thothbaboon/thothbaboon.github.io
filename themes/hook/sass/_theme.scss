@@ -1,0 +1,129 @@
+// Dark theme variables - now used as default
+:root {
+    --foreground: #e2e8f0;
+    --background: #1a202c;
+    --secondary: #a0aec0;
+    --tertiary: #2d3748;
+    --accent: #818cf8;
+    --accent-highlight: #a5b4fc;
+    --table-border: #2d3748;
+    --table-row: #252f3f;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --code-punctuation: #cbd5e0;
+    --code-inline-fg: #e2e8f0;
+    
+    // Enhanced syntax highlighting colors
+    --code-keyword: #d8b4fe;
+    --code-string: #4ade80;
+    --code-number: #fb923c;
+    --code-function: #60a5fa;
+    --code-comment: #9ca3af;
+    --code-operator: #cbd5e0;
+    --code-class: #fb7185;
+    --code-variable: #93c5fd;
+    
+    --shadow: rgba(0, 0, 0, 0.5);
+    --card-bg: #252f3f;
+    --header-bg: rgba(26, 32, 44, 0.8);
+}
+
+// Base styles without theming conditionals
+body {
+    color: var(--foreground);
+    background-color: var(--background);
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.secondary {
+    color: var(--secondary);
+}
+
+a, a:link, a:visited {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--accent-highlight);
+    text-decoration: underline;
+}
+
+blockquote {
+    border-left: 3px solid var(--accent);
+    margin-left: 0;
+    padding-left: 1em;
+    font-style: italic;
+    color: var(--secondary);
+}
+
+// Enhanced code styling
+code {
+    background-color: var(--code-bg);
+    color: var(--code-inline-fg) !important;
+    border-radius: 4px;
+    padding: 0.2em 0.4em;
+    font-size: 0.9em;
+    font-family: 'Fira Code', monospace;
+}
+
+pre {
+    background-color: var(--code-bg) !important;
+    border-radius: 8px !important;
+    padding: 1.25em;
+    overflow: auto;
+    box-shadow: 0 4px 8px var(--shadow);
+    border-left: 3px solid var(--accent);
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: var(--code-fg) !important;
+    font-family: 'Fira Code', monospace;
+    tab-size: 4;
+}
+
+.footnote-definition sup {
+    color: var(--secondary);
+}
+
+.footnotes {
+    border-top: 1px solid var(--table-border);
+}
+
+.footnotes-list li {
+    color: var(--secondary);
+
+    p {
+        color: var(--foreground);
+    }
+}
+
+hr {
+    border: none;
+    border-bottom: 1px solid var(--table-border);
+    margin: 2em 0;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    
+    th, td {
+        border-color: var(--table-border);
+        padding: 0.5em 0.8em;
+    }
+
+    thead, tr:nth-child(even) {
+        background-color: var(--table-row);
+    }
+    
+    th {
+        text-align: left;
+        font-weight: 600;
+    }
+}

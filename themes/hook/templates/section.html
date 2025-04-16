@@ -1,0 +1,70 @@
+{% extends "index.html" %}
+
+{% block title %}{{ config.title }} | {{ section.title }}{% endblock title %}
+{% block description %}{{ section.description | default(value=config.description) }}{% endblock description %}
+
+{% block header %}
+<header>
+    <div class="header-content">
+        <h1><a href="{{ config.base_url }}">{{ config.title }}</a></h1>
+        <nav class="header-links">
+            <a href="{{ config.base_url }}" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+{% endblock header %}
+
+{% block content %}
+<main>
+    <div class="section-header">
+        <h1>{{ section.title }}</h1>
+        {% if section.description %}
+        <p class="section-description">{{ section.description }}</p>
+        {% endif %}
+    </div>
+
+    {% if section.content %}
+    <div class="section-content">
+        {{ section.content | safe }}
+    </div>
+    {% endif %}
+
+    {% if section.pages %}
+    <div class="archive">
+        {% if section.extra and section.extra.sort_by == "date" %}
+        {% set pages_by_year = section.pages | sort(attribute="date") | group_by(attribute="year") %}
+        {% for year, pages in pages_by_year %}
+        <div class="archive-year">
+            <h2>{{ year }}</h2>
+            <ul class="post-list">
+                {% for page in pages %}
+                <li>
+                    <a href="{{ page.permalink }}">{{ page.title }}</a>
+                    <div class="post-date">{{ page.date | date(format="%B %d") }}</div>
+                    {% if page.description %}
+                    <div class="post-description">{{ page.description }}</div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+        {% else %}
+        <ul class="post-list">
+            {% for page in section.pages %}
+            <li>
+                <a href="{{ page.permalink }}">{{ page.title }}</a>
+                {% if page.date %}
+                <div class="post-date">{{ page.date | date(format="%B %d, %Y") }}</div>
+                {% endif %}
+                {% if page.description %}
+                <div class="post-description">{{ page.description }}</div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</main>
+{% endblock content %}

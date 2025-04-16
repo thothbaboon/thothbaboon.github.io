@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% block description %}{{ section.description | default(value=config.description) }}{% endblock description %}">
+    <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+    {% block extra_head %}
+    <link rel="stylesheet" href="{{ get_url(path='style.css', cachebust=true) }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    {% endblock extra_head %}
+    {% block feed_link %}
+        {% if config.generate_feeds %}
+            {% if config.feed_filenames %}
+                {% for feed in config.feed_filenames %}
+                    {% if feed == "atom.xml" %}
+                        <link rel="alternate" type="application/atom+xml" title="{{ config.title | safe }} - Atom Feed" href="{{ get_url(path=feed, trailing_slash=false) | safe }}">
+                    {% elif feed == "rss.xml" %}
+                        <link rel="alternate" type="application/rss+xml" title="{{ config.title | safe }} - RSS Feed" href="{{ get_url(path=feed, trailing_slash=false) | safe }}">
+                    {% else %}
+                        <link rel="alternate" href="{{ get_url(path=feed, trailing_slash=false) | safe }}">
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <link rel="alternate" type="application/atom+xml" title="{{ config.title | safe }}" href="{{ get_url(path='atom.xml', trailing_slash=false) | safe }}">
+            {% endif %}
+        {% endif %}
+    {% endblock %}
+</head>
+<body>
+    {% block header %}
+    <header>
+        <div class="header-content">
+            <h1><a href="{{ config.base_url }}">{{ config.title }}</a></h1>
+            {% set linked_pages = section.pages | filter(attribute="extra.in_header") %}
+            {% if config.extra.links or linked_pages %}
+            <nav class="header-links">
+                {% for link in config.extra.links %}
+                <a href="{{ link.href }}">{{ link.title }}</a>
+                {% endfor %}
+                {% for page in linked_pages %}
+                <a href="{{ page.permalink }}">{{ page.title }}</a>
+                {% endfor %}
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+    {% endblock header %}
+    
+    {% block content %}
+    {% set blog = get_section(path="blog/_index.md") %}
+    {% if section.content or blog.pages %}
+    <main>
+        {% if section.content %}
+        <div class="content">
+            {{ section.content | safe }}
+        </div>
+        {% endif %}
+        
+        {% if blog.pages %}
+        <section class="posts-section">
+            <h2>Recent Posts</h2>
+            <ul class="post-list">
+                {% for post in blog.pages | slice(end=10) %}
+                <li>
+                    <a href="{{ post.permalink }}">{{ post.title }}</a>
+                    <div class="post-date">{{ post.date | date(format="%B %d, %Y") }}</div>
+                    {% if post.description %}
+                    <div class="post-description">{{ post.description }}</div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% if blog.pages | length > 10 %}
+            <p class="archive-link"><a href="{{ blog.permalink }}">View all posts &rarr;</a></p>
+            {% endif %}
+        </section>
+        {% endif %}
+    </main>
+    {% endif %}
+    {% endblock content %}
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; {{ now() | date(format="%Y") }} {{ config.title }}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

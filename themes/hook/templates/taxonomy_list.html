@@ -1,0 +1,54 @@
+{% extends "index.html" %}
+
+{% block title %}{{ config.title }} | All {{ taxonomy.name | capitalize }}{% endblock title %}
+
+{% block header %}
+<header>
+    <div class="header-content">
+        <h1><a href="{{ config.base_url }}">{{ config.title }}</a></h1>
+        <nav class="header-links">
+            <a href="{{ config.base_url }}" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+{% endblock header %}
+
+{% block content %}
+<main>
+    <div class="taxonomy-header">
+        <h1>All {{ taxonomy.name | capitalize }}</h1>
+    </div>
+
+    {% if terms %}
+    <div class="taxonomy-list">
+        {% for term in terms %}
+        <div class="taxonomy-item">
+            <h2><a href="{{ term.permalink }}">{{ term.name }}</a></h2>
+            <div class="taxonomy-count">{{ term.pages | length }} post{% if term.pages | length != 1 %}s{% endif %}</div>
+            
+            {% if term.pages %}
+            <ul class="post-list small-list">
+                {% for page in term.pages | slice(end=5) %}
+                <li>
+                    <a href="{{ page.permalink }}">{{ page.title }}</a>
+                    {% if page.date %}
+                    <div class="post-date">{{ page.date | date(format="%B %d, %Y") }}</div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+                
+                {% if term.pages | length > 5 %}
+                <li class="view-more">
+                    <a href="{{ term.permalink }}">View all {{ term.pages | length }} posts &rarr;</a>
+                </li>
+                {% endif %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No {{ taxonomy.name }} found.</p>
+    {% endif %}
+</main>
+{% endblock content %}
