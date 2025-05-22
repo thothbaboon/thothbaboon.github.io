@@ -8,7 +8,7 @@ When on Day 17 you see an input as small as this one, you know it’s not gonna 
 
 Here is a detailed explanation of how to solve it.
 
-You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code_2024/blob/master/src/day17/mod.rs).
+You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2024/day17/mod.rs).
 
 # Part 1: Running the Program
 

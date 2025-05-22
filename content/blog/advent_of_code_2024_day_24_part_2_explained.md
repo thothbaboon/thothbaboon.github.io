@@ -4,7 +4,7 @@ description = "Detailled explaination of how I solved the part 2 of day 24 for A
 date = 2025-05-04
 +++
 
-You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code_2024/blob/master/src/day24/mod.rs).
+You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2024/day24/mod.rs).
 
 ## Part 1 - Simulating the Logical Gates
 
@@ -65,7 +65,7 @@ The circuit is just inputs and outputs (`xXX`, `yXX`, `zXX`), gates, and wires c
 
 I usually use a pen and some paper, but the graph looked big. So I decided to use **Graphviz** instead. I wrote a script in Rust that takes the datastructure I used for part 1, and build a `.dot` file representing the logical circuit of the puzzle input as a graph.
 
-You can see the [result here](https://raw.githubusercontent.com/thothbaboon/advent_of_code_2024/ee12f814c52a036c76849b16677f1a4b6c3efb19/src/day24/initial_day24.svg).  
+You can see the [result here](https://raw.githubusercontent.com/thothbaboon/advent_of_code/refs/heads/master/src/y2024/day24/initial_day24.svg).  
 *Good idea to use Graphviz, it would have taken me a lot of paper and time to draw it.* 
 
 And the result relieved me. It looks like there are patterns, which is expected for a sum as it's just summing at the current index, then moving to the next with the carry. **This means 4 patterns should look different.**
@@ -97,4 +97,4 @@ Expected = 1000011000101111111110101011110010010001110000
 Produced = 1000011000101111111110101011110010010001110000
 ```
 
-See the [fixed graph here](https://raw.githubusercontent.com/thothbaboon/advent_of_code_2024/refs/heads/master/src/day24/day24.svg).
+See the [fixed graph here](https://raw.githubusercontent.com/thothbaboon/advent_of_code/refs/heads/master/src/y2024/day24/day24.svg).

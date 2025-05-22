@@ -10,7 +10,7 @@ I noticed a lot of people on Reddit were struggling with it, so I decided to sha
 
 Hopefully, this will help some of you.
 
- I haven’t included code snippets here, but you can find my [Rust implementation on GitHub](https://github.com/thothbaboon/advent_of_code_2024/blob/master/src/day16/mod.rs).
+ I haven’t included code snippets here, but you can find my [Rust implementation on GitHub](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2024/day16/mod.rs).
 
 ## Part 1: Dijkstra
 
