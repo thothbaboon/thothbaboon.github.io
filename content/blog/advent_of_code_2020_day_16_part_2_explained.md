@@ -1,5 +1,5 @@
 +++
-title = "Advent of Code 2020 Day 26 Part 2 Explained - Ticket Translation"
+title = "Advent of Code 2020 Day 16 Part 2 Explained - Ticket Translation"
 description = "Detailled explaination of how I solved the part 2 of day 16 for AoC 2020, Ticket Translation, with a link to my Rust implementation."
 date = 2025-05-27
 +++
