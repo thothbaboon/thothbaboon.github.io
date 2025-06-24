@@ -63,7 +63,7 @@
         <section class="posts-section">
             <h2>Recent Posts</h2>
             <ul class="post-list">
-                {% for post in blog.pages | slice(end=10) %}
+                {% for post in blog.pages | slice(end=5) %}
                 <li>
                     <a href="{{ post.permalink }}">{{ post.title }}</a>
                     <div class="post-date">{{ post.date | date(format="%B %d, %Y") }}</div>
