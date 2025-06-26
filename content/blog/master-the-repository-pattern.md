@@ -2,6 +2,7 @@
 title = "Master the Repository Pattern"
 description = "Complete guide to master the repository design pattern, with Typescript examples. Isolate the data persistence from the business logic."
 date = 2023-10-27
+extra.featured = true
 +++
 
 [Find the code in my Github](https://github.com/thothbaboon/master_the_repository_pattern)

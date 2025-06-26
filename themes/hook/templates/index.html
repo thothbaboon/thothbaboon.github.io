@@ -61,9 +61,10 @@
         
         {% if blog.pages %}
         <section class="posts-section">
-            <h2>Recent Posts</h2>
+            <h2>Featured Posts</h2>
             <ul class="post-list">
-                {% for post in blog.pages | slice(end=5) %}
+                {% set featured_posts = blog.pages | filter(attribute="extra.featured") %}
+                {% for post in featured_posts %}
                 <li>
                     <a href="{{ post.permalink }}">{{ post.title }}</a>
                     <div class="post-date">{{ post.date | date(format="%B %d, %Y") }}</div>

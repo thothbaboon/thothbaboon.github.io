@@ -2,6 +2,7 @@
 title = "How to Use Chainlink VRF on Hardhat for dApp Local Development"
 description = "Learn how to set up Chainlink VRF mock locally to develop and test a dApp with an experience close to a Node.js backend"
 date = 2025-06-24
+extra.featured = true
 +++
 
 Chainlink VRF is excellent for generating verifiably random numbers in smart contracts. However, setting up a complete dApp with VRF for local development can be challenging at first.

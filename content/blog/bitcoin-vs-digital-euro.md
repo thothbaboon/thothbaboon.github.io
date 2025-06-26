@@ -2,6 +2,7 @@
 title = "Bitcoin vs Digital Euro"
 date = 2024-02-11
 description = "As cryptocurrencies gain popularity, central banks around the world are growing concerned about the potential impact on traditional currencies."
+extra.featured = true
 +++
 
 As cryptocurrencies gain popularity, **central banks** around the world are **growing concerned** about the potential impact on traditional currencies. Individuals now have the option to use currencies that operate **beyond the control** of any government or public entity, facilitating global transactions with **unprecedented freedom**.
