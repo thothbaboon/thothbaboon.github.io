@@ -4,7 +4,7 @@ description = "Detailled explaination of how I solved the day 21 for AoC 2024, K
 date = 2025-04-21
 +++
 
-You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2024/day21/mod.rs).
+You can find my [Rust implementation on Github](https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2024/day21/mod.rs).
 
 For this puzzle, we have multiple layers of keypads.
 

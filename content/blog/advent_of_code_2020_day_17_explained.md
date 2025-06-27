@@ -4,7 +4,7 @@ description = "Detailled explaination of how I solved day 17 for AoC 2020, Conwa
 date = 2025-06-05
 +++
 
-You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2020/day17/mod.rs).
+You can find my [Rust implementation on Github](https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2020/day17/mod.rs).
 
 
 As we get closer to the end, problems usually become harder. For this one, the difficulty wasn’t solving the problem, but understanding it.  

@@ -4,7 +4,7 @@ description = "Detailled explaination of how I solved the part 2 of day 16 for A
 date = 2025-05-27
 +++
 
-You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2020/day16/mod.rs).
+You can find my [Rust implementation on Github](https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2020/day16/mod.rs).
 
 ## Part 1
 

@@ -11,7 +11,7 @@ While Chainlink provides [documentation for using a VRF Coordinator mock with Re
 
 This article takes it to the next level, showing you how to integrate the VRF mock into a complete local development environment using Hardhat. You'll learn how to set up a dApp that feels as responsive as working with a traditional Node.js backend, while still leveraging the power of blockchain and Chainlink's VRF.
 
-You can find the complete project [here on my GitHub](https://github.com/thothbaboon/vrf-hardhat-local-setup). This article focuses on the most important concepts, so feel free to clone the project locally to fully understand the implementation.
+You can find the complete project [here on my GitHub](https://github.com/antoineprdhmm/vrf-hardhat-local-setup). This article focuses on the most important concepts, so feel free to clone the project locally to fully understand the implementation.
 
 ## The Project
 
@@ -36,7 +36,7 @@ The dApp is a "Flip a coin" app that demonstrates how to integrate Chainlink VRF
 
 ### FlipCoin - Main Smart Contract
 
-The contract is located at [hardhat/contracts/FlipCoin.sol](https://github.com/thothbaboon/vrf-hardhat-local-setup/blob/main/hardhat/contracts/FlipCoin.sol).
+The contract is located at [hardhat/contracts/FlipCoin.sol](https://github.com/antoineprdhmm/vrf-hardhat-local-setup/blob/main/hardhat/contracts/FlipCoin.sol).
 
 Since it needs to request random numbers from Chainlink VRF, it must inherit from `VRFConsumerBaseV2Plus` (V2.5 is sometimes called V2Plus).
 
@@ -264,7 +264,7 @@ Remember, when calling the `flip` method, it emits a `Flipping` event with the r
 
 In the app, we can listen for this event, and `console.log` the request ID.
 
-To fulfill the VRF request, I made a little script: [fulfillVrfRequest.ts](https://github.com/thothbaboon/vrf-hardhat-local-setup/blob/main/hardhat/scripts/fulfillVrfRequest.ts)
+To fulfill the VRF request, I made a little script: [fulfillVrfRequest.ts](https://github.com/antoineprdhmm/vrf-hardhat-local-setup/blob/main/hardhat/scripts/fulfillVrfRequest.ts)
 
 This script takes 2 parameters:
 

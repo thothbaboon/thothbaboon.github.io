@@ -4,7 +4,7 @@ description = "Detailled explaination of how I solved the day 20 for AoC 2024, R
 date = 2025-04-16
 +++
 
-You can find my [Rust implementation on Github](https://github.com/thothbaboon/advent_of_code/blob/master/src/y2024/day20/mod.rs).
+You can find my [Rust implementation on Github](https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2024/day20/mod.rs).
 
 ## Part 1 – Brute Force to Elegance
 
