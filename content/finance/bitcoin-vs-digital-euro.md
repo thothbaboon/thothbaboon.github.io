@@ -2,7 +2,6 @@
 title = "Bitcoin vs Digital Euro"
 date = 2024-02-11
 description = "As cryptocurrencies gain popularity, central banks around the world are growing concerned about the potential impact on traditional currencies."
-extra.featured = true
 +++
 
 As cryptocurrencies gain popularity, **central banks** around the world are **growing concerned** about the potential impact on traditional currencies. Individuals now have the option to use currencies that operate **beyond the control** of any government or public entity, facilitating global transactions with **unprecedented freedom**.
@@ -13,7 +12,7 @@ Often, central banks promote their digital currencies as **preferable alternativ
 
 Given this context, it becomes essential to examine the fundamental differences between cryptocurrencies and central bank digital currencies (CBDCs).
 
-This article will focus on comparing Bitcoin, the most popular cryptocurrency, with the digital euro, which has been introduced on a [previous article](@/blog/an-introduction-to-digital-euro.md).
+This article will focus on comparing Bitcoin, the most popular cryptocurrency, with the digital euro, which has been introduced on a [previous article](@/finance/an-introduction-to-digital-euro.md).
 
 ## Decentralization vs Centralization
 

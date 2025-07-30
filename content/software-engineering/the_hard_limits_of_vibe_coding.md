@@ -2,7 +2,7 @@
 title = "The Hard Limits of Vibe Coding (That No Model Will Ever Fix)"
 description = "Vibe coding’s biggest constraints come from how it works, not from the models performances."
 date = 2025-04-25
-extra.featured = true
+
 +++
 
 ## Introduction

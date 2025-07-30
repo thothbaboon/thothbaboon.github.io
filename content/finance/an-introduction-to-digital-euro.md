@@ -2,7 +2,6 @@
 title = "An Introduction to Digital Euro"
 description = "As of today, banknotes and coins are the only forms of European Central Bank (ECB) money granted legal tender status."
 date = 2024-02-08
-extra.featured = true
 +++
 
 ## Public Money, Private Money, and Legal Tender
