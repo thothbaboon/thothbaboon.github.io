@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Detailled explaination of how I solved the part 2 of day 17 for AoC 2024, Chronospatial Computer, with a link to my Rust implementation.">
+    <title> | Advent of Code 2024 Day 17 Part 2 Explained - Chronospatial Computer</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Advent of Code 2024 Day 17 Part 2 Explained - Chronospatial Computer</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-04-08" class="post-date">
+                    April 08, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>When on Day 17 you see an input as small as this one, you know it’s not gonna be easy.</p>
+<p>Here is a detailed explanation of how to solve it.</p>
+<p>You can find my <a href="https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2024/day17/mod.rs">Rust implementation on Github</a>.</p>
+<h1 id="part-1-running-the-program">Part 1: Running the Program</h1>
+<p>The logic to solve part 1 is actually pretty simple. The only difficulty is the amount of information to process. One can easily miss one bit of information or mix a few things and spend time finding where the issue comes from.</p>
+<p>But getting the right answer to part 1 ensure we understood well how the computer is working.</p>
+<p>And we are ready for the meat and potatoes.</p>
+<h1 id="part-2-program-printing-itself">Part 2: Program Printing Itself</h1>
+<p>The goal is to find a value for register A that makes the program print itself.</p>
+<h2 id="example-input">Example Input</h2>
+<p>I started by analysing the example program to understand how the program prints stuff - <strong>when</strong>, and <strong>what value</strong>. If we understand this, then we can probably make the program print what we want.</p>
+<p>We’re given:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Register A: 2024
+</span><span>Register B: 0
+</span><span>Register C: 0
+</span><span>
+</span><span>Program: 0,3,5,4,3,0
+</span></code></pre>
+<p>The program is composed of the following instructions:</p>
+<ul>
+<li><code>0,3</code> → <code>A = A / 8</code></li>
+<li><code>5,4</code> → prints <code>A % 8</code></li>
+<li><code>3,0</code> → jumps at the beginning if <code>A != 0</code></li>
+</ul>
+<p>Or written in code:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">while</span><span> a &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>    a = a / </span><span style="color:#d08770;">8</span><span>;
+</span><span>    println!(&quot;</span><span style="color:#d08770;">{}</span><span>&quot;, A % </span><span style="color:#d08770;">8</span><span>);
+</span><span>}
+</span></code></pre>
+<p><code>A</code> is getting smaller at each iteration, which makes the program stop at some point. The bigger <code>A</code>, the most values will be printed.</p>
+<p><em>I supposed there was some mathematical trick here with the 8. But I’m not a math guy, so I asked a hint to chat GPT about this program.</em></p>
+<p><em>He told me to look at octal decomposition.</em></p>
+<p>💡  <code>% 8</code> gives the least 3 significant bits (from 0 to 7)</p>
+<ul>
+<li>000 = 0</li>
+<li>111 = 7</li>
+</ul>
+<p>💡 <code>/ 8</code> dividing by 8 is making a right shift of <strong>3</strong> bits (2^<strong>3</strong> = 8)</p>
+<h3 id="octal-representation">Octal Representation</h3>
+<p>The program simply prints the <strong>octal representation</strong> of A: it takes the bits 3 by 3 from A, and prints the values.</p>
+<p>It prints the rightmost 3 bits first. So we just need to take the printed values in reverse order, which gives us A in base 8. Then convert from base 8 to base 10, and we get A.</p>
+<p><code>A</code> base 8 = 0345300</p>
+<p><em>Notice that there is an extra 0 at the right. It’s because the program starts with a division, then prints. If we want the program to print 6 values, we need 7 values. We set 0 because it’s the smallest value, which is what we want.</em></p>
+<p><code>A</code> base 10 = <strong>117440</strong> 🎉</p>
+<h3 id="another-way-to-see-it">Another Way to See It</h3>
+<p>The goal is to make the program print <code>0, 3, 5, 4, 3, and 0</code>.</p>
+<p>Let’s simply run the program in reverse !</p>
+<p>Which A % 8 gives 0 ? <strong>0</strong></p>
+<p>Which A % 8 gives 3 ? <strong>3</strong></p>
+<p>Which A % 8 gives 5 ? <strong>5</strong></p>
+<p>Which A % 8 gives 4 ? <strong>4</strong></p>
+<p>Which A % 8 gives 3 ? <strong>3</strong></p>
+<p>Which A % 8 gives 0 ? <strong>0</strong></p>
+<p>Building <code>A</code> backward gives <code>034530</code> to which we add a trailing 0 for the first <code>/ 8</code> and we get <code>0345300</code> base 8, which is 117440 base 10 🎉.</p>
+<pre data-lang="txt" style="background-color:#2b303b;color:#c0c5ce;" class="language-txt "><code class="language-txt" data-lang="txt"><span>Register A: 117440
+</span><span>Register B: 0
+</span><span>Register C: 0
+</span><span>
+</span><span>Program: 0,3,5,4,3,0
+</span></code></pre>
+<p>Running this program with part 1 code gives <code>0,3,5,4,3,0</code> 🎉.</p>
+<p>This one was easy, now let’s do the real puzzle input.</p>
+<h2 id="puzzle-input">Puzzle Input</h2>
+<p>My input was the following:</p>
+<pre data-lang="txt" style="background-color:#2b303b;color:#c0c5ce;" class="language-txt "><code class="language-txt" data-lang="txt"><span>Register A: 30899381
+</span><span>Register B: 0
+</span><span>Register C: 0
+</span><span>
+</span><span>Program: 2,4,1,1,7,5,4,0,0,3,1,6,5,5,3,0
+</span></code></pre>
+<p>As for the example input, let’s break it down into instructions:</p>
+<ul>
+<li><code>2,4</code> → <code>B = A % 8</code></li>
+<li><code>1,1</code> → <code>B = B ^ 1</code></li>
+<li><code>7,5</code> → <code>C = A / pow(2,B)</code></li>
+<li><code>4,0</code> → <code>B = B ^ C</code></li>
+<li><code>0,3</code> → <code>A = A / 8</code></li>
+<li><code>1,6</code> → <code>B = B ^ 6</code></li>
+<li><code>5,5</code> → prints <code>B % 8</code></li>
+<li><code>3,0</code> → jumps at the beginning if <code>A != 0</code></li>
+</ul>
+<p>Or written in code:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">while</span><span> a &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>    b = (a % </span><span style="color:#d08770;">8</span><span>) ^ </span><span style="color:#d08770;">1</span><span>;
+</span><span>    c = a.</span><span style="color:#96b5b4;">div</span><span>(</span><span style="color:#d08770;">2_</span><span style="color:#b48ead;">usize</span><span>.</span><span style="color:#96b5b4;">pow</span><span>(b as </span><span style="color:#b48ead;">u32</span><span>));
+</span><span>    b = b ^ c;
+</span><span>    a = a / </span><span style="color:#d08770;">8
+</span><span>    b = b ^ </span><span style="color:#d08770;">6</span><span>;
+</span><span>    println!(&quot;</span><span style="color:#d08770;">{}</span><span>&quot;, b % </span><span style="color:#d08770;">8</span><span>);
+</span><span>}
+</span></code></pre>
+<p>We still see the octal structure:</p>
+<ul>
+<li><code>% 8</code> → working with 3-bit chunks</li>
+<li><code>/ 8</code> → right shift</li>
+</ul>
+<p>But now there’s a twist:</p>
+<ul>
+<li>We compute <code>C = A &gt;&gt; B</code> (<code>A / 2.pow(B)</code> is a right shift of B bits)</li>
+<li>We then XOR <code>B</code> with <code>C</code></li>
+</ul>
+<p>This means that the output (<code>B % 8</code>) doesn’t depend <em>only</em> on the current 3-bit chunk of <code>A</code>.</p>
+<p>It also depends on <strong>other bits further left</strong>, based on the value of <code>B</code>.</p>
+<h3 id="reconstructing-a">Reconstructing <code>A</code></h3>
+<p>In the example input, we could reconstruct <code>A</code> digit by digit <strong>from right to left</strong> (starting with the first printed value).</p>
+<ul>
+<li>Output = <code>v1,v2,v3,v4,v5,v6</code></li>
+<li><code>A</code> = <code>aaa_bbb_ccc_ddd_eee_fff_ggg</code> (<code>ggg</code> being the added 0 for to handle the first division)</li>
+</ul>
+<p>We started by trying to find which <code>fff</code> gives <code>v1</code>, then which <code>eee</code> gives <code>v2</code>, etc ..</p>
+<p>But for the puzzle input program, we can’t do this because of <code>^ C</code>.</p>
+<ul>
+<li>Output = <code>v1,v2,v3,…,v15,v16</code></li>
+<li><code>A</code> = <code>aaa_bbb_..._nnn_ooo_ppp</code></li>
+</ul>
+<p>To find <code>ppp</code> we need to know <code>ooo</code> , <code>nnn</code> , etc .. because of <code>C</code>.</p>
+<p>So the only way is to start from <code>aaa</code>, because we know what’s left to <code>aaa</code>: nothing ! (0).</p>
+<p>Once <code>aaa</code> is known, we can find <code>bbb</code>. Because to find <code>bbb</code> we need to know <code>aaa</code> and we will know it. And then we can do the rest.</p>
+<p>Let’s find <code>aaa</code>:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">run_instructions</span><span>(</span><span style="color:#bf616a;">a</span><span>: </span><span style="color:#b48ead;">usize</span><span>) -&gt; </span><span style="color:#b48ead;">usize </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> b = (a % </span><span style="color:#d08770;">8</span><span>) ^ </span><span style="color:#d08770;">1</span><span>;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> c = a.</span><span style="color:#96b5b4;">div</span><span>(</span><span style="color:#d08770;">2_</span><span style="color:#b48ead;">usize</span><span>.</span><span style="color:#96b5b4;">pow</span><span>(b as </span><span style="color:#b48ead;">u32</span><span>));
+</span><span>    ((b ^ c) ^ </span><span style="color:#d08770;">6</span><span>) % </span><span style="color:#d08770;">8
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">for</span><span> aaa in </span><span style="color:#d08770;">0</span><span>..</span><span style="color:#d08770;">8 </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> output = </span><span style="color:#96b5b4;">run_instructions</span><span>(aaa);
+</span><span>    </span><span style="color:#b48ead;">if</span><span> output == </span><span style="color:#d08770;">0 </span><span>{
+</span><span>        println!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> -&gt; </span><span style="color:#d08770;">{}</span><span>&quot;, aaa, output);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// 7 -&gt; 0
+</span></code></pre>
+<p>There is only one possibility for <code>aaa</code> which is <code>7</code>.</p>
+<p>Now let’s find <code>bbb</code>, knowing <code>aaa</code>.</p>
+<p><strong>Be careful, we are in octal ! Let’s shift <code>aaa</code> 3 bits to the left.</strong></p>
+<p><code>7 &lt;&lt; 3</code> gives 111000 (<code>aaabbb</code> with <code>bbb</code> = 0)</p>
+<p>Let’s try all possibilities for <code>bbb</code> (from 000 to 111).</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">for</span><span> bbb in </span><span style="color:#d08770;">0</span><span>..</span><span style="color:#d08770;">8 </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> a = </span><span style="color:#d08770;">7 </span><span>&lt;&lt; </span><span style="color:#d08770;">3 </span><span>| bbb; </span><span style="color:#65737e;">// one possibility for aaabbb
+</span><span>    </span><span style="color:#b48ead;">let</span><span> output = </span><span style="color:#96b5b4;">run_instructions</span><span>(a);
+</span><span>    </span><span style="color:#b48ead;">if</span><span> output == </span><span style="color:#d08770;">3 </span><span>{
+</span><span>        println!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> -&gt; </span><span style="color:#d08770;">{}</span><span>&quot;, a, output);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span> </span><span style="color:#65737e;">// 56 -&gt; 3
+</span></code></pre>
+<p>To get <code>3,0</code> printed, <code>A</code> should be <code>56</code>. Meaning <code>bbb</code> is 0, as <code>56</code> in decimal is <code>111000</code> in binary (<code>70</code> in octal).</p>
+<p>We repeat this until we reconstruct all digits of <code>A</code>.</p>
+<p>At some steps, there will be several possibilities for A. This can be handled by doing a BFS.</p>
+<p>At the end, we pick the smallest <code>A</code> and we get our 2nd star for Day 17 🎉.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

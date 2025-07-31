@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Learn how monitor a Langchain agent usage with Datadog and limit the usage of his tools.">
+    <title> | Langchain Agent tool monitoring and usage limiting</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Langchain Agent tool monitoring and usage limiting</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2023-08-31" class="post-date">
+                    August 31, 2023
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>LLM agents are powerful.</p>
+<p>Given an Open AI API key and some tools, the agent can solve complex
+problems by itself like a grown man.</p>
+<p>But unlike when we the code by ourselves, we don’t know what the agent
+will do:</p>
+<ul>
+<li>How many calls to the LLM is he going to do ?</li>
+<li>Which tool is he going to use ?</li>
+</ul>
+<p>Maybe some tools are using an expensive API, and to limit the cost, we
+want to limit the agent from using those too much.</p>
+<p>For example, the user might have a limited usage of a LLM tool
+depending of the pricing model he choose. Once his rate limit is
+reached, we don’t wan’t the agent to use the tool for this user
+anymore.</p>
+<p>Let’s see how we can do this.</p>
+<h2 id="monitoring-the-agent-usage">Monitoring the agent usage</h2>
+<p>The first step is to monitor the agent usage.</p>
+<h3 id="llm-usage">LLM usage</h3>
+<p>When creating a new instance of a model with Langchain, the OpenAI API
+key that the agent will use must be specified.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span>llm = </span><span style="color:#bf616a;">ChatOpenAI</span><span>(
+</span><span>    </span><span style="color:#bf616a;">temperature</span><span>=</span><span style="color:#d08770;">0</span><span>,
+</span><span>    </span><span style="color:#bf616a;">openai_api_key</span><span>=&quot;</span><span style="color:#a3be8c;">&lt;OPEN AI API KEY&gt;</span><span>&quot;,
+</span><span>    </span><span style="color:#bf616a;">model</span><span>=&quot;</span><span style="color:#a3be8c;">gpt-3.5-turbo</span><span>&quot;
+</span><span>)
+</span></code></pre>
+<p>Each API key <a href="https://platform.openai.com/docs/guides/rate-limits/what-are-the-rate-limits-for-our-api">has a rate limit</a>.</p>
+<p>The rate limit is not as easy as the APIs we know to manage, because
+unlike these APIs, we don’t know how many calls will be made by the
+agent. One call to the agent might consume 2, 3, 4 or more calls to
+the LLM. We can’t know it in advance. Asking the agent to solve
+several prompts in parallel might lead to rate limit errors.</p>
+<p>To know how many requests and tokens have been used to solve a prompt,
+we can use <code>get_openai_callback</code></p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">with </span><span style="color:#bf616a;">get_openai_callback</span><span>() </span><span style="color:#b48ead;">as </span><span>cb:
+</span><span>    response = llm.</span><span style="color:#bf616a;">run</span><span>(prompt)
+</span><span>    </span><span style="color:#96b5b4;">print</span><span>(</span><span style="color:#b48ead;">f</span><span>&quot;</span><span style="color:#a3be8c;">Requests: </span><span>{cb.successful_requests}&quot;)
+</span><span>    </span><span style="color:#96b5b4;">print</span><span>(</span><span style="color:#b48ead;">f</span><span>&quot;</span><span style="color:#a3be8c;">Tokens: </span><span>{cb.total_tokens}&quot;)
+</span></code></pre>
+<h3 id="tool-usage">Tool usage</h3>
+<p>Say there is a tool that the agent can use to get infos about a
+LinkedIn profile, given the LinkedIn profile URL.</p>
+<p>Here is how this tool could be implemented:</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">LinkedinScraper</span><span style="color:#eff1f5;">():
+</span><span>
+</span><span style="color:#b48ead;">def </span><span style="color:#96b5b4;">__init__</span><span>(</span><span style="color:#bf616a;">self</span><span>):
+</span><span>    </span><span style="color:#bf616a;">self</span><span>._params = {}
+</span><span>
+</span><span style="color:#b48ead;">def </span><span style="color:#8fa1b3;">build</span><span>(</span><span style="color:#bf616a;">self</span><span>):
+</span><span>    </span><span style="color:#b48ead;">async def </span><span style="color:#8fa1b3;">scrap_linkedin</span><span>(</span><span style="color:#bf616a;">url</span><span>: str):
+</span><span>        </span><span style="color:#96b5b4;">print</span><span>(&quot;</span><span style="color:#a3be8c;">Linkedin scraping tool used</span><span>&quot;)
+</span><span>
+</span><span>        </span><span style="color:#65737e;"># ...
+</span><span>        </span><span style="color:#65737e;"># scrap the linkedin page
+</span><span>        </span><span style="color:#65737e;"># ...
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">return </span><span>&quot;</span><span style="color:#a3be8c;">&lt;linkedin page summary&gt;</span><span>&quot;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span>scrap_linkedin
+</span><span>
+</span><span>scrap_linkedin = </span><span style="color:#bf616a;">LinkedinScraper</span><span>().</span><span style="color:#bf616a;">build</span><span>()
+</span><span>
+</span><span>tools = []
+</span><span>
+</span><span style="color:#65737e;"># ...
+</span><span style="color:#65737e;"># maybe some other tools
+</span><span style="color:#65737e;"># ...
+</span><span>
+</span><span>tools.</span><span style="color:#bf616a;">append</span><span>(
+</span><span>    Tool.</span><span style="color:#bf616a;">from_function</span><span>(
+</span><span>        </span><span style="color:#bf616a;">func</span><span>=scrap_linkedin_person,
+</span><span>        </span><span style="color:#bf616a;">coroutine</span><span>=scrap_linkedin_person,
+</span><span>        </span><span style="color:#bf616a;">name</span><span>=&quot;</span><span style="color:#a3be8c;">linkedin_scraper</span><span>&quot;,
+</span><span>        </span><span style="color:#bf616a;">description</span><span>=&quot;</span><span style="color:#a3be8c;">Useful to get infos about a linkedin profile.</span><span>&quot;
+</span><span>    ),
+</span><span>)
+</span><span>
+</span><span>agent = </span><span style="color:#bf616a;">initialize_agent</span><span>(tools, llm, </span><span style="color:#bf616a;">agent</span><span>=AgentType.</span><span style="color:#bf616a;">OPENAI_MULTI_FUNCTIONS</span><span>)
+</span></code></pre>
+<p>Each time the agent will use the tool, <code>scrap_linkedin</code> will be
+called.</p>
+<p>The tool is just a function returning a string. But we are using a
+class as a builder to give the function access to some values.</p>
+<h2 id="sending-metrics-to-an-observability-platform">Sending metrics to an observability platform</h2>
+<p>To get a clear overview of the usage, we can use a platform like
+Datadog or Grafana.</p>
+<p>Logs are not made to track usage. Instead, we should send metrics to
+one of this platform, and create a timeseries to vizualise the usage
+over time.</p>
+<p>Here is an example of a metrics tracker, sending metrics to Datadog.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">import </span><span>os
+</span><span>
+</span><span style="color:#b48ead;">from </span><span>datadog </span><span style="color:#b48ead;">import </span><span>initialize, statsd
+</span><span style="color:#b48ead;">from </span><span>dotenv </span><span style="color:#b48ead;">import </span><span>load_dotenv
+</span><span>
+</span><span style="color:#bf616a;">load_dotenv</span><span>()
+</span><span>
+</span><span>
+</span><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">MetricsTracker</span><span style="color:#eff1f5;">:
+</span><span>    </span><span style="color:#b48ead;">def </span><span style="color:#96b5b4;">__init__</span><span>(</span><span style="color:#bf616a;">self</span><span>):
+</span><span>        options = {
+</span><span>            &#39;</span><span style="color:#a3be8c;">statsd_host</span><span>&#39;: os.</span><span style="color:#bf616a;">getenv</span><span>(&#39;</span><span style="color:#a3be8c;">STATSD_HOST</span><span>&#39;),
+</span><span>            &#39;</span><span style="color:#a3be8c;">statsd_port</span><span>&#39;: os.</span><span style="color:#bf616a;">getenv</span><span>(&#39;</span><span style="color:#a3be8c;">STATSD_PORT</span><span>&#39;)
+</span><span>        }
+</span><span>        </span><span style="color:#bf616a;">initialize</span><span>(**options)
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">def </span><span style="color:#8fa1b3;">increment</span><span>(</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">label</span><span>, </span><span style="color:#bf616a;">nb_occurences</span><span>=</span><span style="color:#d08770;">1</span><span>):
+</span><span>            statsd.</span><span style="color:#bf616a;">increment</span><span>(&quot;</span><span style="color:#a3be8c;">llm_agent.</span><span>&quot; + label, </span><span style="color:#bf616a;">value</span><span>=nb_occurences)
+</span></code></pre>
+<p>We can replace the <code>print</code> in the <code>scrap_linkedin</code> function
+with the following code to increment the metric each time the tool is
+used by the agent.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span>metrics_tracker = </span><span style="color:#bf616a;">MetricsTracker</span><span>()
+</span><span>metrics_tracker.</span><span style="color:#bf616a;">increment</span><span>(</span><span style="color:#bf616a;">label</span><span>=&quot;</span><span style="color:#a3be8c;">tool.called.linkedin_scrapper</span><span>&quot;)
+</span></code></pre>
+<h2 id="limiting-the-usage-of-the-tool">Limiting the usage of the tool</h2>
+<p>Now that we know the usage of the tool, maybe we want to limit the
+agent from using it.</p>
+<p>We can imagine different kind of limits. Let’s see how to implement a
+user based daily rate limiting.</p>
+<p>The idea is actually pretty simple:</p>
+<ul>
+<li>When creating new instance of the tool, we pass the user id as
+parameter</li>
+<li>At the beginning of the tool, we verify that the user rate
+limit has not been reached
+<ul>
+<li>if it has been reached, then we return an error</li>
+<li>if not, we continue</li>
+</ul>
+</li>
+</ul>
+<p>It’s important to note here that we don’t throw an error from the
+tool. Instead, we return a string with a message saying the tool can’t
+be used to get the information about this profile.</p>
+<p>By doing this, the agent will not fail, and might try another solution
+to find infos about this profile. For example, if the agent has
+another tool to search on Google, maybe he will use it.</p>
+<p>Here is a simple function to verify if the user has reached the rate
+limit or not.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">import </span><span>os
+</span><span>
+</span><span style="color:#b48ead;">from </span><span>redis </span><span style="color:#b48ead;">import </span><span>Redis
+</span><span style="color:#b48ead;">from </span><span>dotenv </span><span style="color:#b48ead;">import </span><span>load_dotenv
+</span><span>
+</span><span style="color:#bf616a;">load_dotenv</span><span>()
+</span><span>
+</span><span>redis = </span><span style="color:#bf616a;">Redis</span><span>(</span><span style="color:#bf616a;">host</span><span>=os.</span><span style="color:#bf616a;">getenv</span><span>(&#39;</span><span style="color:#a3be8c;">REDIS_HOST</span><span>&#39;), </span><span style="color:#bf616a;">port</span><span>=</span><span style="color:#bf616a;">int</span><span>(os.</span><span style="color:#bf616a;">getenv</span><span>(&#39;</span><span style="color:#a3be8c;">REDIS_PORT</span><span>&#39;)),
+</span><span>          </span><span style="color:#bf616a;">password</span><span>=os.</span><span style="color:#bf616a;">getenv</span><span>(&#39;</span><span style="color:#a3be8c;">REDIS_PASSWORD</span><span>&#39;), </span><span style="color:#bf616a;">decode_responses</span><span>=</span><span style="color:#d08770;">True</span><span>)
+</span><span>
+</span><span style="color:#bf616a;">LINKEDIN_RATE_LIMIT </span><span>= </span><span style="color:#d08770;">200
+</span><span>
+</span><span style="color:#b48ead;">def </span><span style="color:#8fa1b3;">get_is_linkedin_scrapper_request_authorized</span><span>(</span><span style="color:#bf616a;">user_id</span><span>):
+</span><span>    key = &quot;</span><span style="color:#a3be8c;">linkedin_</span><span>&quot; + user_id
+</span><span>
+</span><span>    count = </span><span style="color:#bf616a;">int</span><span>(redis.</span><span style="color:#bf616a;">get</span><span>(key)) </span><span style="color:#b48ead;">if </span><span>redis.</span><span style="color:#bf616a;">exists</span><span>(key) </span><span style="color:#b48ead;">else </span><span style="color:#d08770;">0
+</span><span>
+</span><span>    is_rate_limit_reached = count &gt;= </span><span style="color:#bf616a;">LINKEDIN_RATE_LIMIT
+</span><span>    </span><span style="color:#b48ead;">if </span><span>is_rate_limit_reached:
+</span><span>        </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">False
+</span><span>
+</span><span>    redis.</span><span style="color:#bf616a;">set</span><span>(key, count + </span><span style="color:#d08770;">1</span><span>)
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#d08770;">True
+</span></code></pre>
+<p>With a cron job running every day to clean the Redis database, this is
+a simple way to implement a daily based user rate limiting.</p>
+<p>Finally, we can use this function in the tool.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">LinkedinScraper</span><span style="color:#eff1f5;">():
+</span><span>    user_id: str = &quot;&quot;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">def </span><span style="color:#96b5b4;">__init__</span><span>(</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">user_id</span><span>: str):
+</span><span>        </span><span style="color:#bf616a;">self</span><span>._params = {}
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.user_id = user_id
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">def </span><span style="color:#8fa1b3;">build</span><span>(</span><span style="color:#bf616a;">self</span><span>):
+</span><span>        </span><span style="color:#b48ead;">async def </span><span style="color:#8fa1b3;">scrap_linkedin</span><span>(</span><span style="color:#bf616a;">url</span><span>: str):
+</span><span>            is_authorized = </span><span style="color:#bf616a;">get_is_linkedin_scrapper_request_authorized</span><span>(</span><span style="color:#bf616a;">self</span><span>.user_id)
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">if </span><span>not is_authorized:
+</span><span>                </span><span style="color:#b48ead;">return </span><span>&quot;</span><span style="color:#a3be8c;">Not authorized to get infos on this profile.</span><span>&quot;
+</span><span>
+</span><span>            </span><span style="color:#65737e;"># scrap the linkedin page
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">return </span><span>&quot;</span><span style="color:#a3be8c;">&lt;linkedin page summary&gt;</span><span>&quot;
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">return </span><span>scrap_linkedin
+</span></code></pre>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

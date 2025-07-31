@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Detailled explaination of how I solved the part 2 of day 16 for AoC 2020, Ticket Translation, with a link to my Rust implementation.">
+    <title> | Advent of Code 2020 Day 16 Part 2 Explained - Ticket Translation</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Advent of Code 2020 Day 16 Part 2 Explained - Ticket Translation</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-05-27" class="post-date">
+                    May 27, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>You can find my <a href="https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2020/day16/mod.rs">Rust implementation on Github</a>.</p>
+<h2 id="part-1">Part 1</h2>
+<p>As usual, this was the easy part.</p>
+<p>For each field, a set of valid value ranges is specified. If a value fits at least one field range, it’s considered valid.<br />
+Summing all the invalid values across all nearby tickets gives the answer for part 1.</p>
+<p>Next!</p>
+<h2 id="part-2">Part 2</h2>
+<p>Nothing too difficult here either. But it did teach me a lesson, which is why I decided to write a quick blog post about it.</p>
+<p>The goal is to determine the order of the fields on the ticket based on the ticket values.</p>
+<p>The tricky part is that a single field can match multiple positions.</p>
+<pre data-lang="txt" style="background-color:#2b303b;color:#c0c5ce;" class="language-txt "><code class="language-txt" data-lang="txt"><span>class: 0-1 or 4-19
+</span><span>row: 0-5 or 8-19
+</span><span>seat: 0-13 or 16-19
+</span><span>
+</span><span>your ticket:
+</span><span>11,12,13
+</span><span>
+</span><span>nearby tickets:
+</span><span>3,9,18
+</span><span>15,1,5
+</span><span>5,14,9
+</span></code></pre>
+<p>In this example, <code>row</code> could correspond to the first, second, or third values.</p>
+<p>So, my initial approach was recursive:</p>
+<ul>
+<li>All tickets have N values.</li>
+<li>Start at value index 0, with all fields available.</li>
+<li>For each value index (from 0 to N-1):
+<ul>
+<li>Identify all fields that are valid for that position across all valid tickets.</li>
+<li>For each possible field, make a recursive call to the next index with that field marked as used.</li>
+</ul>
+</li>
+<li>Stop when each field has been assigned to one position—solution found!</li>
+</ul>
+<p><strong>This works and gives the correct answer. But it’s slow..</strong> - about 110 seconds, due to the number of combinations explored.</p>
+<p>So I searched for a faster approach.</p>
+<p>That’s when I realized something important when looking more deeply at the input: <strong>there is actually only one possibility for each field</strong>.</p>
+<p>Here’s a log of value indexes (i.e. ticket columns) followed by the field indexes that are valid for each:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>13 -&gt; [12]
+</span><span>10 -&gt; [8, 12]
+</span><span>12 -&gt; [8, 12, 14]
+</span><span>9 -&gt; [8, 9, 12, 14]
+</span><span>18 -&gt; [4, 8, 9, 12, 14]
+</span><span>16 -&gt; [4, 8, 9, 12, 14, 18]
+</span><span>5 -&gt; [4, 8, 9, 12, 14, 15, 18]
+</span><span>1 -&gt; [4, 5, 8, 9, 12, 14, 15, 18]
+</span><span>4 -&gt; [4, 5, 8, 9, 10, 12, 14, 15, 18]
+</span><span>3 -&gt; [4, 5, 8, 9, 10, 12, 14, 15, 18, 19]
+</span><span>2 -&gt; [4, 5, 8, 9, 10, 12, 14, 15, 17, 18, 19]
+</span><span>0 -&gt; [2, 4, 5, 8, 9, 10, 12, 14, 15, 17, 18, 19]
+</span><span>8 -&gt; [2, 4, 5, 7, 8, 9, 10, 12, 14, 15, 17, 18, 19]
+</span><span>7 -&gt; [0, 2, 4, 5, 7, 8, 9, 10, 12, 14, 15, 17, 18, 19]
+</span><span>17 -&gt; [0, 2, 4, 5, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19]
+</span><span>14 -&gt; [0, 2, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 18, 19]
+</span><span>11 -&gt; [0, 2, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19]
+</span><span>19 -&gt; [0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19]
+</span><span>6 -&gt; [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19]
+</span><span>15 -&gt; [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+</span></code></pre>
+<p>For the value at index 13, only the field 12 is valid.</p>
+<p>For the value at index 10, fields 8 and 12 are valid—but since field 12 is already assigned to index 13 (it's the only valid option), only field 8 can be assigned here.</p>
+<p>And so on.</p>
+<p>This creates a chain of constraints that leads to a unique mapping. Once I realized that, the solution became straightforward.</p>
+<p>In theory, there could have been multiple mapping giving the same answer, as we only care about multiplying the values for the fields starting with <code>departure</code>. That's what led me to a recursive approach in the first place.</p>
+<p><strong>But I should have spent more time analyzing the input before jumping into
+writing code. 😅</strong></p>
+<p>I even saw later on Reddit that this unique solution made it possible to solve part 2 by hand.</p>
+<p>Still, I got the answer pretty quickly with my first solution.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

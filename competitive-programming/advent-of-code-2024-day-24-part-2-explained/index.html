@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Detailled explaination of how I solved the part 2 of day 24 for AoC 2024, Crossed Wires, with a link to my Rust implementation.">
+    <title> | Advent of Code 2024 Day 24 Part 2 Explained - Crossed Wires</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Advent of Code 2024 Day 24 Part 2 Explained - Crossed Wires</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-05-04" class="post-date">
+                    May 04, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>You can find my <a href="https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2024/day24/mod.rs">Rust implementation on Github</a>.</p>
+<h2 id="part-1-simulating-the-logical-gates">Part 1 - Simulating the Logical Gates</h2>
+<p>Basically, we have boolean logical gates (XOR, AND, OR)</p>
+<ul>
+<li>Taking 2 boolean as input.</li>
+<li>Producing one boolean as output.</li>
+</ul>
+<p>Inputs and outputs are labelled (<code>x01</code>, <code>njn</code>, <code>z12</code>, ..). Each gate define the labels of his inputs and output.</p>
+<p>The puzzle input gives the values for some labels. But for some gates, we don't have the input values yet - we need to compute some gates first to get these values.</p>
+<p>After simulating all the gates, we end up with a bunch of values starting with the letter <code>z</code> (<code>z00</code>, <code>z01</code>, ..).
+Combining these bits produce a number, which is the answer for part 1.</p>
+<p>I'm not gonna dig much into part 1 because it's simple and doesn't really help for part 2, which is the interesting part.</p>
+<h2 id="part-2-debugging-the-logic-circuit">Part 2 - Debugging the Logic Circuit</h2>
+<p>The gates actually represents a <strong>logical circuit</strong> which tries to <strong>sum 2 numbers</strong>.
+The values in puzzle input are the binary representation of 2 numbers:</p>
+<ul>
+<li>X = <code>... x02 x01 x00</code></li>
+<li>Y = <code>... y02 y01 y00</code></li>
+</ul>
+<p>And the output of the circuit is Z = <code>... z02 z01 z00</code>.</p>
+<p>If the circuit was working properly, we should have <code>X + Y = Z</code>.</p>
+<p>The gates of the circuit are connected together by <strong>wires</strong> which takes the output of a gate and plug it as input for another gate.
+But there have been 4 wires swaps, so the circuit is not working as expected.
+The goal is to find these 8 wires (2 by swap), and swap them back to make the adder works again.</p>
+<h3 id="printing-the-binary-values">Printing the Binary Values</h3>
+<p>I didn't know where to start.</p>
+<p>So I printed:</p>
+<ul>
+<li>The expected Z value, in binary.</li>
+<li>The Z value produced by the circuit, in binary.</li>
+</ul>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Expected = 1000011000101111111110101011110010010001110000
+</span><span>Produced = 1000011001000000000000101011101110000001110000
+</span></code></pre>
+<p><em><code>z00</code> being the rightmost bit here</em></p>
+<p>It doesn't help in any way to solve the problem, but at least we can observe it. Yay!</p>
+<p>At least, we can notice that the first difference appears at <code>z10</code>. Which means the beginning of the circuit is working fine, until <code>z10</code>.
+So there is probably wires to swap around <code>z10</code>.</p>
+<p>But still had no idea which wires to swap.</p>
+<h3 id="my-brain-wasn-t-working-but-my-eyes-were">My Brain Wasn't Working, But My Eyes Were</h3>
+<p>When my brain can't find a solution, I try to visualize the problem - I'm someone who need to see the things.</p>
+<p>The circuit is just inputs and outputs (<code>xXX</code>, <code>yXX</code>, <code>zXX</code>), gates, and wires connecting everything. So a graph.</p>
+<p>I usually use a pen and some paper, but the graph looked big. So I decided to use <strong>Graphviz</strong> instead. I wrote a script in Rust that takes the datastructure I used for part 1, and build a <code>.dot</code> file representing the logical circuit of the puzzle input as a graph.</p>
+<p>You can see the <a href="https://raw.githubusercontent.com/antoineprdhmm/advent_of_code/refs/heads/master/src/y2024/day24/initial_day24.svg">result here</a>.<br />
+<em>Good idea to use Graphviz, it would have taken me a lot of paper and time to draw it.</em></p>
+<p>And the result relieved me. It looks like there are patterns, which is expected for a sum as it's just summing at the current index, then moving to the next with the carry. <strong>This means 4 patterns should look different.</strong></p>
+<p>The first bit that differs in the output is <code>z10</code>, so I've looked around it on the graph.</p>
+<p>The pattern that seems to work is the following:
+<img src="/advent_of_code_2024_day_24_part_2_explained/expected_pattern.png" /></p>
+<p>For <code>z10</code>, we have:
+<img src="/advent_of_code_2024_day_24_part_2_explained/broken_z10.png" /></p>
+<p>Swapping the wires <code>mkk</code> and <code>z10</code> in the puzzle input fixed it:
+<img src="/advent_of_code_2024_day_24_part_2_explained/fixed_z10.png" /></p>
+<p>I found 2 similar broken patterns, which I fixed by doing the necessary swaps.
+<img src="/advent_of_code_2024_day_24_part_2_explained/broken_z14.png" />
+<img src="/advent_of_code_2024_day_24_part_2_explained/broken_z34.png" /></p>
+<p>3 swaps on 4, and no similar pattern left to fix. So I ran again the code that compares the expected output and produced output. There was still a difference on bit 25.</p>
+<p>Each <code>xXX</code> <code>yXX</code> pair goes though a XOR gate and a AND gate. For <code>x25</code> and <code>y25</code>, 2 wires needed to be swap:</p>
+<img src="/advent_of_code_2024_day_24_part_2_explained/x25_y25.png" />
+<p>And that's it. The circuit is now working as expected:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Expected = 1000011000101111111110101011110010010001110000
+</span><span>Produced = 1000011000101111111110101011110010010001110000
+</span></code></pre>
+<p>See the <a href="https://raw.githubusercontent.com/antoineprdhmm/advent_of_code/refs/heads/master/src/y2024/day24/day24.svg">fixed graph here</a>.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

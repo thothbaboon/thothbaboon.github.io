@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Detailled explaination of how I solved day 17 for AoC 2020, Conway Cubes, with a link to my Rust implementation.">
+    <title> | Advent of Code 2020 Day 17 Explained - Conway Cubes</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Advent of Code 2020 Day 17 Explained - Conway Cubes</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-06-05" class="post-date">
+                    June 05, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>You can find my <a href="https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2020/day17/mod.rs">Rust implementation on Github</a>.</p>
+<p>As we get closer to the end, problems usually become harder. For this one, the difficulty wasn’t solving the problem, but understanding it.</p>
+<p>The solution is actually super simple, and now that I’ve completed it, I feel like this blog post is kind of dumb. But still, it might not be useless for some.</p>
+<h2 id="some-clarity-about-the-problem">Some Clarity About the Problem</h2>
+<p>We are in an infinite grid, where only a few cubes in a compact area are active. Even though the grid is 3D in part 1 and 4D in part 2, it can be represented in 2D at first because it’s flat: all active cubes are on the same <code>z</code> (and also <code>w</code> for part 2) layer.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>.#.
+</span><span>..#
+</span><span>###
+</span></code></pre>
+<p>It’s represented in 2D, but it’s actually 3×3×1 for part 1 (3D), and 3×3×1×1 for part 2 (4D).</p>
+<p>The rules are as follows:</p>
+<ul>
+<li>If a cube is <em>active</em> and <em>exactly <code>2</code> or <code>3</code></em> of its neighbors are also active, the cube remains <em>active</em>. Otherwise, the cube becomes <em>inactive</em>.</li>
+<li>If a cube is <em>inactive</em> but <em>exactly <code>3</code></em> of its neighbors are active, the cube becomes <em>active</em>. Otherwise, the cube remains <em>inactive</em>.</li>
+</ul>
+<p>This means that at each cycle, inactive neighbors of active cubes might become active.</p>
+<p>That’s why after the first cycle, the area containing active cubes is no longer flat: there are inactive neighbors at <code>z = -1</code> and <code>z = 1</code> because they are adjacent to cubes at <code>z = 0</code>. So the rules must be applied to those as well—and some of them become active.</p>
+<p>That’s also why after cycle 2, the active area isn’t 3×3 anymore but expands to 5×5, because some neighbors around the original 3×3 area in the <code>x</code> and <code>y</code> dimensions have become active.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>After 1 cycle:
+</span><span>
+</span><span>z=-1
+</span><span>#..
+</span><span>..#
+</span><span>.#.
+</span><span>
+</span><span>z=0
+</span><span>#.#
+</span><span>.##
+</span><span>.#.
+</span><span>
+</span><span>z=1
+</span><span>#..
+</span><span>..#
+</span><span>.#.
+</span><span>
+</span><span>After 2 cycles:
+</span><span>
+</span><span>z=-2
+</span><span>.....
+</span><span>.....
+</span><span>..#..
+</span><span>.....
+</span><span>.....
+</span><span>
+</span><span>z=-1
+</span><span>..#..
+</span><span>.#..#
+</span><span>....#
+</span><span>.#...
+</span><span>.....
+</span><span>
+</span><span>z=0
+</span><span>##...
+</span><span>##...
+</span><span>#....
+</span><span>....#
+</span><span>.###.
+</span><span>
+</span><span>z=1
+</span><span>..#..
+</span><span>.#..#
+</span><span>....#
+</span><span>.#...
+</span><span>.....
+</span><span>
+</span><span>z=2
+</span><span>.....
+</span><span>.....
+</span><span>..#..
+</span><span>.....
+</span><span>.....
+</span></code></pre>
+<h2 id="implementation">Implementation</h2>
+<p>We might first think of representing the grid as an array, but that’s not a good idea because:</p>
+<ul>
+<li>We actually only care about the active cells (see the rules), so we'd be storing a lot of useless data.</li>
+<li>The frame of view expands over time.</li>
+</ul>
+<p>The only information we need to compute the next cycle is the set of active cubes from the previous cycle.</p>
+<p>Then, the only cubes that can be affected are the active cubes and their inactive neighbors. All we have to do is count the number of active neighbors for each of these cubes and, based on the rules, determine if they’re active in the next cycle.</p>
+<h2 id="then-i-released">Then I released…</h2>
+<p>I found out this is essentially the Game of Life problem (<a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">https://en.wikipedia.org/wiki/Conway's_Game_of_Life</a>).</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

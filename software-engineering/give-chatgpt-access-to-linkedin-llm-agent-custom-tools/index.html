@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Learn how to give access ChatGPT access to LinkedIn using LangChain&#x27;s custom tool feature and Bright data.">
+    <title> | Give ChatGPT Access to LinkedIn: LLM Agent Custom Tools</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Give ChatGPT Access to LinkedIn: LLM Agent Custom Tools</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2023-07-19" class="post-date">
+                    July 19, 2023
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <h2 id="introduction">Introduction</h2>
+<h3 id="llm-agent">LLM agent</h3>
+<p>An agent is a LLM (large language model) like ChatGTP, with access to
+a suite of tool giving him superpowers. The agent will have a
+conversation with himself, and knows which tools to use, in order to
+solve the problem it’s given.</p>
+<p>ChatGPT alone doesn’t have access to the internet. So it’s not
+possible to ask him about a LinkedIn profile or any other URL.</p>
+<p><img src="/give-chatgpt-access-to-linkedin-llm-agent-custom-tools/chatgpt.png" alt="ChatGPT does not have access to LinkedIn" /></p>
+<p>But it’s possible to create an agent, based on ChatGPT, and give him a
+tool to scrape a LinkedIn page.</p>
+<h3 id="langchain">LangChain</h3>
+<p>LangChain is a very helpful framework when developing applications
+powered by LLM. Building agent is one of the most interesting feature
+of LangChain.</p>
+<p>To know more about LangChain, go to <a href="https://python.langchain.com/docs/get_started/introduction.html">https://python.langchain.com/docs/get_started/introduction.html</a>.</p>
+<h3 id="brightdata">BrightData</h3>
+<p>Scraping LinkedIn is not trivial. But it can be done without pain or
+infrastructure with a BrightData web Scrapper.</p>
+<p>To know more about BrightData,
+<a href="https://get.brightdata.com/0hknxvdyx9nw">click here</a>.</p>
+<h2 id="creating-the-scrapper">Creating The Scrapper</h2>
+<p>All you need to do is go on
+<a href="https://get.brightdata.com/0hknxvdyx9nw">BrightData</a>, and
+create a new web scrapper.</p>
+<p>The code is simple. It just tells the scrapper to navigate to the
+LinkedIn URL, parse the HTML to extract the important infos, and
+return the data.</p>
+<p>BrightData will provide an API endpoint to call to trigger the
+scrapper. The scrapper will then respond by webhook.</p>
+<p>As input for the scrapper, define 2 parameters</p>
+<ul>
+<li><code>id</code> which is a unique ID for each API call to BrightData.
+It’s useful to map each webhook response to the corresponding API
+call on our side.</li>
+<li><code>linkedinUrl</code> which is the URL you want to scrape on LinkedIn</li>
+</ul>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#65737e;">// go to linkedin
+</span><span style="color:#8fa1b3;">navigate</span><span>(</span><span style="color:#bf616a;">input</span><span>.</span><span style="color:#bf616a;">linkedinUrl</span><span>);
+</span><span style="color:#65737e;">// call the parser
+</span><span style="color:#b48ead;">let </span><span style="color:#bf616a;">data </span><span>= </span><span style="color:#8fa1b3;">parse</span><span>();
+</span><span style="color:#65737e;">// build the response
+</span><span style="color:#8fa1b3;">collect</span><span>({
+</span><span>	url: new URL(</span><span style="color:#bf616a;">location</span><span>.href),
+</span><span>	content: </span><span style="color:#bf616a;">data</span><span>.content,
+</span><span>	id: </span><span style="color:#bf616a;">input</span><span>.id,
+</span><span>});
+</span></code></pre>
+<p>The content of <code>parse</code> is pretty simple. Personally, I read only
+the JSON object provided by LinkedIn inside this script tag, because
+it’s simpler to extract from the HTML page and contains all the needed
+infos.</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#b48ead;">return </span><span>{
+</span><span>	content: </span><span style="color:#8fa1b3;">$</span><span>(&#39;</span><span style="color:#a3be8c;">script[type=&quot;application/ld+json&quot;]</span><span>&#39;).</span><span style="color:#8fa1b3;">html</span><span>(),
+</span><span>};
+</span></code></pre>
+<p>The API endpoint URL to call the scrapper can be found in the tab
+<strong>Initiate by API</strong>. Finally, click on the tab <strong>more</strong>, then
+<strong>delivery preference</strong> to configure the webhook.</p>
+<h2 id="building-the-agent">Building the Agent</h2>
+<h3 id="linkedin-custom-tool">LinkedIn Custom Tool</h3>
+<p>A custom tool is basically a function, taking parameters and returning
+a string. Given the naming, the parameter types, and a small
+description, the AI knows what to expect from the tool and how to call
+it.</p>
+<p>The only tricky thing to think of is how to manage the webhook
+response. Making a simple API call to BrightData and return the
+response does not work.</p>
+<p>Instead, the idea is to</p>
+<ul>
+<li>Make an API call to BrightData in the tool</li>
+<li>Wait for the corresponding webhook</li>
+<li>Transfer the data to the right tool execution</li>
+<li>Resume the execution of the tool</li>
+</ul>
+<p>This is for the steps 2 and 3 that an id is required. Instead of using
+an id, it would have been possible to use the LinkedIn URL, but the id
+solution is a more standard and generic solution.</p>
+<p>To keep things simple for this article, I used Python’s future from
+asyncio library. But in a production environment, it’s not the best
+choice.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">import </span><span>requests
+</span><span style="color:#b48ead;">import </span><span>asyncio
+</span><span style="color:#b48ead;">import </span><span>uuid
+</span><span>
+</span><span>endpoint = &quot;</span><span style="color:#a3be8c;">&lt;BRIGHT DATA SCRAPER ENDPOINT&gt;</span><span>&quot;
+</span><span>apiToken = &quot;</span><span style="color:#a3be8c;">&lt;BRIGHT DATA API TOKEN&gt;</span><span>&quot;
+</span><span>headers = {
+</span><span>    &#39;</span><span style="color:#a3be8c;">Authorization</span><span>&#39;: &#39;</span><span style="color:#a3be8c;">Bearer </span><span>&#39; + apiToken,
+</span><span>    &quot;</span><span style="color:#a3be8c;">Content-Type</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">application/json</span><span>&quot;,
+</span><span>}
+</span><span>
+</span><span>webhook_futures = {}
+</span><span>
+</span><span style="color:#b48ead;">async def </span><span style="color:#8fa1b3;">scrap_linkedin</span><span>(</span><span style="color:#bf616a;">url</span><span>: str):
+</span><span>    future_id = </span><span style="color:#bf616a;">str</span><span>(uuid.</span><span style="color:#bf616a;">uuid4</span><span>())
+</span><span>
+</span><span>    data = {&#39;</span><span style="color:#a3be8c;">linkedinUrl</span><span>&#39;: url, &#39;</span><span style="color:#a3be8c;">id</span><span>&#39;: future_id}
+</span><span>
+</span><span>    future = asyncio.</span><span style="color:#bf616a;">Future</span><span>()
+</span><span>    webhook_futures[future_id] = future
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># call bright data scraper
+</span><span>    requests.</span><span style="color:#bf616a;">post</span><span>(</span><span style="color:#bf616a;">url</span><span>=endpoint, </span><span style="color:#bf616a;">json</span><span>=data, </span><span style="color:#bf616a;">headers</span><span>=headers)
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># wait for the future to be resolved by the webhook handler
+</span><span>    content = </span><span style="color:#b48ead;">await </span><span>future
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># remove the future from the dict
+</span><span>    </span><span style="color:#b48ead;">del </span><span>webhook_futures[future_id]
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span>content
+</span></code></pre>
+<h3 id="handling-the-webhook">Handling the Webhook</h3>
+<p>The API is built with aiohttp. The idea is to listen to the webhook
+sent by BrightData, retrieve the corresponding future by his id, and
+resolve this future with the scraped data.</p>
+<pre data-lang="py" style="background-color:#2b303b;color:#c0c5ce;" class="language-py "><code class="language-py" data-lang="py"><span style="color:#b48ead;">from </span><span>aiohttp </span><span style="color:#b48ead;">import </span><span>web
+</span><span>
+</span><span style="color:#b48ead;">async def </span><span style="color:#8fa1b3;">bright_data_webhooks_handler</span><span>(</span><span style="color:#bf616a;">request</span><span>):
+</span><span>    data = </span><span style="color:#b48ead;">await </span><span>request.</span><span style="color:#bf616a;">json</span><span>()
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># retrieve the future by his id
+</span><span>    future = webhook_futures.</span><span style="color:#bf616a;">get</span><span>(data[</span><span style="color:#d08770;">0</span><span>][&#39;</span><span style="color:#a3be8c;">input</span><span>&#39;][&#39;</span><span style="color:#a3be8c;">id</span><span>&#39;])
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">if </span><span>future is not </span><span style="color:#d08770;">None</span><span>:
+</span><span>        </span><span style="color:#65737e;"># Resolve the future with the webhook data
+</span><span>        future.</span><span style="color:#bf616a;">set_result</span><span>(data[</span><span style="color:#d08770;">0</span><span>][&#39;</span><span style="color:#a3be8c;">content</span><span>&#39;])
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span>web.</span><span style="color:#bf616a;">Response</span><span>(</span><span style="color:#bf616a;">status</span><span>=</span><span style="color:#d08770;">200</span><span>)
+</span><span>
+</span><span>app = web.</span><span style="color:#bf616a;">Application</span><span>()
+</span><span>app.router.</span><span style="color:#bf616a;">add_post</span><span>(&#39;</span><span style="color:#a3be8c;">/webhooks/bright-data</span><span>&#39;,
+</span><span>                    bright_data_webhooks_handler)
+</span><span>
+</span><span style="color:#b48ead;">if </span><span>__name__ == &quot;</span><span style="color:#a3be8c;">__main__</span><span>&quot;:
+</span><span>    </span><span style="color:#65737e;"># run server port 8080
+</span><span>    web.</span><span style="color:#bf616a;">run_app</span><span>(app)
+</span></code></pre>
+<h3 id="the-agent">The Agent</h3>
+<pre data-lang="py" style="background-color:#2b303b;color:#c0c5ce;" class="language-py "><code class="language-py" data-lang="py"><span>openai_api_key = &quot;</span><span style="color:#a3be8c;">&lt;YOUR OPEN AI API KEY&gt;</span><span>&quot;
+</span><span>
+</span><span>llm = </span><span style="color:#bf616a;">ChatOpenAI</span><span>(</span><span style="color:#bf616a;">temperature</span><span>=</span><span style="color:#d08770;">0</span><span>, </span><span style="color:#bf616a;">openai_api_key</span><span>=openai_api_key, </span><span style="color:#bf616a;">model</span><span>=&quot;</span><span style="color:#a3be8c;">gpt-3.5-turbo</span><span>&quot;)
+</span><span>tools = [Tool.</span><span style="color:#bf616a;">from_function</span><span>(
+</span><span>    </span><span style="color:#bf616a;">func</span><span>=scrap_linkedin,
+</span><span>    </span><span style="color:#bf616a;">coroutine</span><span>=scrap_linkedin,
+</span><span>    </span><span style="color:#bf616a;">name</span><span>=&quot;</span><span style="color:#a3be8c;">linkedin</span><span>&quot;,
+</span><span>    </span><span style="color:#bf616a;">description</span><span>=&quot;</span><span style="color:#a3be8c;">Useful to get infos about a linkedin url.</span><span>&quot;
+</span><span>)]
+</span><span>agent = </span><span style="color:#bf616a;">initialize_agent</span><span>(tools, llm, </span><span style="color:#bf616a;">agent</span><span>=AgentType.</span><span style="color:#bf616a;">OPENAI_MULTI_FUNCTIONS</span><span>, </span><span style="color:#bf616a;">verbose</span><span>=</span><span style="color:#d08770;">True</span><span>)
+</span></code></pre>
+<h2 id="use-the-agent">Use the Agent</h2>
+<p>Simply call arun (for asynchronous run, as the scraper is an async
+function).</p>
+<pre data-lang="py" style="background-color:#2b303b;color:#c0c5ce;" class="language-py "><code class="language-py" data-lang="py"><span>prompt = &quot;</span><span style="color:#a3be8c;">Tell me the current job of this person https://www.linkedin.com/in/antoine-prudhomme</span><span>&quot;
+</span><span>anwser = </span><span style="color:#b48ead;">await </span><span>agent.</span><span style="color:#bf616a;">arun</span><span>(prompt)
+</span></code></pre>
+<p>And there is the response from the agent</p>
+<pre data-lang="plaintext" style="background-color:#2b303b;color:#c0c5ce;" class="language-plaintext "><code class="language-plaintext" data-lang="plaintext"><span>The current job of Antoine Prudhomme is a Software Engineer at Cargo.
+</span><span>He has been working at Cargo since January 2023. At Cargo, Antoine
+</span><span>works on top of AWS Redshift and Google BigQuery, implements
+</span><span>integrations with Salesforces, Pipedrive, and Outreach, and improves
+</span><span>his AWS skills and knowledge. He also works on infrastructure (AWS VPC
+</span><span>+ EKS), Qovery, Kubernetes, and security topics. You can find more
+</span><span>information about Antoine on his LinkedIn profile: [Antoine Prudhomme
+</span><span>LinkedIn](https://www.linkedin.com/in/antoine-prudhomme)
+</span></code></pre>
+<p>Much better than the ChatGPT screenshot of the introduction right ?
+And yet, it’s the same LLM behind 🙂.</p>
+<p>Of course, it’s possible to create custom tools for everything you can
+imagine.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Detailled explaination of how I solved the day 20 for AoC 2024, Race Condition, with a link to my Rust implementation.">
+    <title> | Advent of Code 2024 Day 20 Explained - Race Condition</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Advent of Code 2024 Day 20 Explained - Race Condition</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-04-16" class="post-date">
+                    April 16, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>You can find my <a href="https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2024/day20/mod.rs">Rust implementation on Github</a>.</p>
+<h2 id="part-1-brute-force-to-elegance">Part 1 – Brute Force to Elegance</h2>
+<blockquote>
+<p>Each cheat has a distinct start position (the position where the cheat is activated, just before the first move that is allowed to go through walls) and end position.</p>
+</blockquote>
+<p>This detail is crucial: a cheat activated at time <code>t</code> and lasting <code>N</code> picoseconds allows us to go through <strong>up to N−1 walls</strong> — because the first move happens <em>after</em> activation. And the cell at <code>t + N</code> must be a <strong>track cell</strong>.</p>
+<h3 id="first-approach">First Approach</h3>
+<p>My first instinct was to reuse Dijkstra, which had already helped me solve a couple of AoC 2024 problems.</p>
+<p>Here’s the idea:</p>
+<ol>
+<li>Run Dijkstra on the original racetrack to get the baseline shortest distance.</li>
+<li>Then, try all possible cheats:
+<ul>
+<li>For each <strong>track</strong> cell, in all four directions,</li>
+<li>If a wall is directly adjacent, temporarily remove it.</li>
+<li>Run Dijkstra again on the altered racetrack.</li>
+<li>If the new distance saves <strong>at least 100 units</strong>, the cheat is <strong>qualified</strong>.</li>
+</ul>
+</li>
+</ol>
+<p>✅ It worked.</p>
+<p>🐌 But it was slooow — running Dijkstra for every wall possibility takes time. A few minutes per run.</p>
+<h3 id="a-smarter-faster-and-sexier-approach">A Smarter, Faster, and Sexier Approach</h3>
+<p>It took me time to realized that removing a wall is really just <strong>connecting two paths that couldn’t connect before</strong>.</p>
+<p>Say we have a wall cell <code>W</code>, with two adjacent track cells <code>A</code> and <code>B</code> (in direction <code>A → W → B</code>).</p>
+<p>We essentially have two separate paths:</p>
+<ul>
+<li>From <strong>Start to A</strong></li>
+<li>From <strong>B to End</strong></li>
+</ul>
+<p>Removing <code>W</code> allows:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>New Path = [Start → A] + [1 step through W] + [B → End]
+</span></code></pre>
+<p>So instead of running Dijkstra each time, we can:</p>
+<ol>
+<li>
+<p>Run Dijkstra <strong>once from Start</strong> to get the shortest path to every cell.</p>
+</li>
+<li>
+<p>Run Dijkstra <strong>once from End</strong> (reverse mode) to get the distance from every cell to the end.</p>
+</li>
+<li>
+<p>For each wall cell <code>W</code>, check its adjacent pairs of track cells <code>A</code> and <code>B</code>.</p>
+</li>
+<li>
+<p>Compute:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>total = distance(Start → A) + 1 + distance(B → End)
+</span></code></pre>
+<p>If this total is at least 100 shorter than the baseline path → it’s a <strong>qualified cheat</strong>.</p>
+</li>
+</ol>
+<p>⚡️ Much faster, much cleaner.</p>
+<h2 id="part-2-bigger-cheats-same-trick">Part 2 – Bigger Cheats, Same Trick</h2>
+<p>Now, cheats can last <strong>up to 20 picoseconds</strong> instead of 2.</p>
+<blockquote>
+<p>Cheats don't need to use all 20 picoseconds; they can last any amount of time up to and including 20 picoseconds (but can still only end when the program is on normal track). Any unused time is lost; it can't be saved for another cheat later.</p>
+</blockquote>
+<p>At first I thought it might require a different strategy. I was thinking of something recursive.</p>
+<p>But then I realized only small changes in part 1 solution was needed.</p>
+<p>Let’s visualize the cheat. When we activate it on a <strong>track cell</strong>, it means walls disappear for the next 19 moves.</p>
+<p>Another way to look at it: we can <strong>teleport</strong> to any track cell within a Manhattan distance ≤ 20.</p>
+<p>⚠️ Important: the <strong>arrival cell</strong> must be a <strong>track cell</strong> — a cheat can’t end on a wall cell.</p>
+<p>So Instead of removing a <strong>single wall</strong> as in part 1, we’re now allowed to “teleport” from one track cell to another, as long as the Manhattan distance between the two cells is <strong>≤ 20</strong>.</p>
+<ol>
+<li>Run Dijkstra <strong>once</strong> from the Start to get distances to all cells.</li>
+<li>Run Dijkstra <strong>once</strong> from the End (in reverse) to get distances from all cells to the End.</li>
+<li>For every pair of track cells <code>A</code>, <code>B</code> such that <code>manhattan(A, B) ≤ 20</code>:
+<ul>
+<li>Compute total distance: <code>distance(Start → A) + manhattan(A, B) + distance(B → End)</code></li>
+<li>If that total saves at least 100 compared to the baseline path → <strong>qualified cheat</strong>.</li>
+</ul>
+</li>
+</ol>
+<p>We’ve just solved Part 2 with the same logic, generalized 🎉</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

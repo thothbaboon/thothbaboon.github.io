@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Detailled explaination of how I solved the day 21 for AoC 2024, Keypad Conundrum, with a link to my Rust implementation.">
+    <title> | Advent of Code 2024 Day 21 Explained - Keypad Conundrum</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Advent of Code 2024 Day 21 Explained - Keypad Conundrum</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-04-21" class="post-date">
+                    April 21, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>You can find my <a href="https://github.com/antoineprdhmm/advent_of_code/blob/master/src/y2024/day21/mod.rs">Rust implementation on Github</a>.</p>
+<p>For this puzzle, we have multiple layers of keypads.</p>
+<p>The first layer is a <strong>numerical keypad</strong>, on which we have to type a code. But it can’t be accessed directly.</p>
+<p>Instead, we use a robot to type the code on the numerical keypad. But this robot is not accessible either — we control it using another robot, and <strong>each robot types on the directional keypad of the robot below</strong>.</p>
+<p>The goal is to find the shortest sequence of keys to type on the <strong>top-level directional keypad</strong> that makes the <strong>first robot</strong> type the target code on the numerical keypad.</p>
+<p>Because robot <em>n+1</em> needs to hit multiple keys on its keypad to make robot <em>n</em> type a <strong>single key</strong>, the sequence grows <strong>exponentially</strong> as more layers are added.</p>
+<p>Brute force works for Part 1 — but Part 2 requires some thinking.</p>
+<h2 id="part-1-understanding-the-problem-and-brute-forcing-it">Part 1 – Understanding the Problem and Brute Forcing It</h2>
+<h3 id="let-s-look-at-the-given-example">Let’s Look at the Given Example</h3>
+<ul>
+<li>The <strong>numerical keypad</strong> is in a <em>depressurized area</em>. We can’t write the code directly.</li>
+<li>We send <strong>Robot 1 (R1)</strong>. But because of radiation, we can’t type on R1’s keypad (<strong>DK1</strong>).</li>
+<li>We send <strong>Robot 2 (R2)</strong> to type on <strong>DK1</strong>. But it’s -40°C, so we can’t access <strong>DK2</strong> either.</li>
+<li>So we send <strong>Robot 3 (R3)</strong> to type on <strong>DK2</strong> — finally, we can type on <strong>DK3</strong>.</li>
+</ul>
+<p>So we end up with a chain</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>DK3 → R3 → DK2 → R2 → DK1 → R1 → numerical keypad
+</span></code></pre>
+<p>Our task: find the <strong>shortest sequence</strong> to type on <strong>DK3</strong> that makes <strong>R1</strong> type the desired code.</p>
+<p>Let’s say we want <strong>R1</strong> to type <code>029A</code>.</p>
+<ul>
+<li>Typing <code>&lt;A^A&gt;^^AvvvA</code> on <strong>DK1</strong> makes R1 write <code>029A</code>.</li>
+<li>Typing <code>v&lt;&lt;A&gt;&gt;^A&lt;A&gt;AvA&lt;^AA&gt;A&lt;vAAA&gt;^A</code> on <strong>DK2</strong> makes DK1 write the above sequence.</li>
+<li>Typing <code>&lt;vA&lt;AA&gt;&gt;^AvAA&lt;^A&gt;A&lt;v&lt;A&gt;&gt;^AvA^A&lt;vA&gt;^A&lt;v&lt;A&gt;^A&gt;AAvA^A&lt;v&lt;A&gt;A&gt;^AAAvA&lt;^A&gt;A</code> on <strong>DK3</strong> makes DK1 write <code>029A</code>.</li>
+</ul>
+<p>This last sequence is one of the shortest possible for DK3: <strong>68 keys long</strong>.</p>
+<h3 id="dijkstra-forever">Dijkstra Forever</h3>
+<p>We’re asked to find the <strong>shortest sequence length</strong> to type on <strong>DK3</strong>.</p>
+<p>To make <strong>R1</strong> type <code>029A</code>, we break it down into shortest paths between:</p>
+<ul>
+<li><code>A → 0</code> (the robot arm is over A by default)</li>
+<li><code>0 → 2</code></li>
+<li><code>2 → 9</code></li>
+<li><code>9 → A</code></li>
+</ul>
+<p>So on <strong>DK1</strong>, we just need to concatenate the shortest paths between each of these key pairs — for example, <code>&lt;A^A&gt;^^AvvvA</code>.</p>
+<p>Then, we move up a level:</p>
+<ul>
+<li>Find how to type this full sequence on <strong>DK2</strong> to simulate <strong>DK1</strong>.</li>
+<li>Then repeat again for <strong>DK3</strong>.</li>
+</ul>
+<p>Since each keypad is a grid, we can represent it as a graph and use <strong>Dijkstra</strong> to find the shortest path between any two keys.</p>
+<p>I’d already used Dijkstra to solve 3 AoC 2024 problems — here’s one more!</p>
+<h2 id="i-got-a-wrong-answer">I Got a Wrong Answer</h2>
+<p>One valid <strong>DK3</strong> sequence for making <strong>R1</strong> type <code>029A</code> is:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>&lt;vA&lt;AA&gt;&gt;^AvAA&lt;^A&gt;A&lt;v&lt;A&gt;&gt;^AvA^A&lt;vA&gt;^A&lt;v&lt;A&gt;^A&gt;AAvA^A&lt;v&lt;A&gt;A&gt;^AAAvA&lt;^A&gt;A
+</span></code></pre>
+<p>Length: <strong>68</strong></p>
+<p>But my algorithm first returned:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>&lt;v&lt;A&gt;A&lt;A&gt;&gt;^AvAA&lt;^A&gt;A&lt;v&lt;A&gt;&gt;^AvA^A&lt;v&lt;A&gt;&gt;^AA&lt;vA&gt;A^A&lt;A&gt;A&lt;v&lt;A&gt;A&gt;^AAAvA&lt;^A&gt;A
+</span></code></pre>
+<p>Length: <strong>70</strong></p>
+<p>At first, I thought my code was wrong — but the sequence <em>does</em> work and produces <code>029A</code>.</p>
+<p>So what was wrong?</p>
+<p>Turns out, <strong>a sequence can be one of the shortest of layer <code>n</code> but does not generate a shortest sequence in layer <code>n+1</code></strong>.</p>
+<p>Let’s say we want to find the shortest <strong>DK1</strong> sequences from <code>2 → 9</code>.</p>
+<p>There are 3 options:</p>
+<ul>
+<li><code>&gt;^^A</code></li>
+<li><code>^^&gt;A</code></li>
+<li><code>^&gt;^A</code></li>
+</ul>
+<p>But the cost of producing these sequences on <strong>DK2</strong> can be different.</p>
+<p>For example:</p>
+<ul>
+<li><code>&gt;^^A</code> → <code>vA&lt;^AA&gt;A</code> → length 8</li>
+<li><code>^^&gt;A</code> → <code>&lt;AAv&gt;A^A</code> → length 8</li>
+<li><code>^&gt;^A</code> → <code>&lt;Av&gt;A&lt;^A&gt;A</code> → <strong>length 10!</strong></li>
+</ul>
+<p>Even though <code>^&gt;^A</code> is a valid shortest sequence on <strong>DK1</strong>, it’s not one of the shortest possible sequence on <strong>DK2</strong>.</p>
+<p>Instead of returning the first shortest sequence in Dijkstra, I had to return all shortest sequences.</p>
+<p>My solution for part 1 was:</p>
+<ul>
+<li>Generating <strong>all</strong> shortest sequences for all layers.</li>
+<li>Return the length of one shortest sequence in the last layer.</li>
+</ul>
+<p>I won’t give too much detail here, because this approach <strong>doesn’t scale</strong>. Let’s talk about the sexier one.</p>
+<h1 id="part-2-forget-the-strings-go-recursive">Part 2 - Forget the Strings, Go Recursive</h1>
+<p>In Part 1, we:</p>
+<ul>
+<li>Generated all shortest sequences on layer <code>n</code></li>
+<li>Then simulated those on layer <code>n+1</code></li>
+<li>Repeat until the top</li>
+</ul>
+<p>With 25 layers, this completely blows up. The number of strings is insane.</p>
+<h3 id="key-insights">Key Insights</h3>
+<p>We <strong>don’t need the actual sequence</strong> — just its <strong>length</strong>.</p>
+<p>As we saw before, to get the valid shortest sequences on layer <code>n</code>, we need to know the shortest sequences on layer <code>n+1</code> - the keys involved in one shortest sequence of layer <code>n</code> will have an impact of the length of the sequences created from this sequence on the layer <code>n+1</code>.</p>
+<p>So instead of generating strings, we just <strong>ask the layer above</strong>:</p>
+<blockquote>
+<p>"Hey, what’s the shortest sequence to go from X to Y?"</p>
+</blockquote>
+<h3 id="recursive-solution">Recursive Solution</h3>
+<p>In the example, there is no layer on top of <strong>DK3</strong>. Which means any shortest sequence from key X to key Y in <strong>DK3</strong> is actually one of the shortest sequence.</p>
+<p>We can give this shortest sequence length to <strong>DK2</strong>.</p>
+<p>We sum everything up to the numerical keypad, and get the answer without any strings! 🎉</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

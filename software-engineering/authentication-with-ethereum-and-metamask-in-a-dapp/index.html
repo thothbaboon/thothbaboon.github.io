@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="How to allow your users to log into your app using Metamask instead of creating an account and filling their login and password.">
+    <title> | Authentication with Ethereum and Metamask in a dApp</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Authentication with Ethereum and Metamask in a dApp</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2022-12-18" class="post-date">
+                    December 18, 2022
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <h2 id="quick-reminder-about-how-login-password-authentication-works">Quick Reminder About How Login/Password Authentication Works</h2>
+<p>We are used to log into web applications using a unique identifier and
+a password. We fill the login form with our unique identifier and
+password, and click on the login button.</p>
+<p>The <strong>unique identifier</strong> can be an email, a phone number, a
+username, … whatever. The goal is to uniquely identify the user. It’s
+a public information.</p>
+<p>The <strong>password</strong> is there to prove that it’s not someone else
+trying to use our identity. That’s why a password is a private
+information.</p>
+<p>The server then search into the database for the account with this
+unique identifier, and check if the password is the correct one. If
+yes, we are authenticated.</p>
+<p>The server can send back a JWT token to the web app that will be sent
+to the server with each request.</p>
+<p><img src="/authentication-with-ethereum-and-metamask-in-a-dapp/login_password.png" alt="simplified login password authentication" /></p>
+<h2 id="using-an-ethereum-account">Using an Ethereum Account</h2>
+<p>When creating an account on the Ethereum blockchain, we get a
+<strong>private key</strong>. The <strong>public key</strong> is generated from the
+private key. And <strong>addresses</strong> are derived from the public key.</p>
+<p>To do authentication, the principle is the same: we need a public and
+unique identifier, and a secret information that only the owner has.</p>
+<p>The identifier is the address, and the private key is the secret
+information.</p>
+<p>But unlike a password, <strong>we never share a private key</strong> ! We share
+our password with the web app when creating an account or log into the
+app. But the private key of our Ethereum account must never be shared.</p>
+<p>Instead, we are gonna use <strong>digital signatures</strong>.</p>
+<p>The server gives us some text: <strong>the challenge</strong></p>
+<ul>
+<li>We sign this challenge using our private key (it can be done with Metamask)</li>
+<li>From the original challenge and the signed challenge, the server is able to find back the
+signatory address</li>
+<li>If the signatory address is our address, we are authenticated as it shows we are owner of the
+private key, which means we are the owner of the Ethereum account.</li>
+<li>The server can send back a JWT token to the web app that will be sent to the server with each
+request.</li>
+</ul>
+<p><img src="/authentication-with-ethereum-and-metamask-in-a-dapp/login_metamask.png" alt="ethereum account authentication using Metamask" /></p>
+<h2 id="ethereum-account-authentication-using-metamask">Ethereum Account Authentication Using Metamask</h2>
+<p>Let’s see some code</p>
+<h3 id="web-app">Web APP</h3>
+<p>Here is a complete login flow on the font end side.</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#65737e;">// login with Metamask (pick the address)
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">accounts </span><span>= </span><span style="color:#b48ead;">await </span><span>window.</span><span style="color:#bf616a;">ethereum</span><span>.</span><span style="color:#8fa1b3;">request</span><span>({
+</span><span>  method: &quot;</span><span style="color:#a3be8c;">eth_requestAccounts</span><span>&quot;,
+</span><span>});
+</span><span>
+</span><span style="color:#65737e;">// this is the address with which we wants to authenticate
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">publicAddress </span><span>= </span><span style="color:#bf616a;">accounts</span><span>[</span><span style="color:#d08770;">0</span><span>];
+</span><span>
+</span><span style="color:#65737e;">// call the server to get the challenge
+</span><span style="color:#65737e;">// (getAuthChallenge is a HTTP GET to the server)
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">challenge </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">getAuthChallenge</span><span>(</span><span style="color:#bf616a;">publicAddress</span><span>);
+</span><span>
+</span><span style="color:#65737e;">// sign the challenge sent by the server with Metamask
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">signChallenge </span><span>= (</span><span style="color:#bf616a;">id</span><span>: string, </span><span style="color:#bf616a;">challenge</span><span>: string): Promise&lt;string&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#b48ead;">return </span><span>new Promise((</span><span style="color:#bf616a;">resolve</span><span>, </span><span style="color:#bf616a;">reject</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    window.</span><span style="color:#bf616a;">ethereum</span><span>.</span><span style="color:#8fa1b3;">sendAsync</span><span>(
+</span><span>      {
+</span><span>        method: &quot;</span><span style="color:#a3be8c;">personal_sign</span><span>&quot;,
+</span><span>        params: [</span><span style="color:#bf616a;">challenge</span><span>, </span><span style="color:#bf616a;">id</span><span>],
+</span><span>        from: </span><span style="color:#bf616a;">id</span><span>,
+</span><span>      },
+</span><span>      </span><span style="color:#b48ead;">function </span><span>(</span><span style="color:#bf616a;">err</span><span>: any, </span><span style="color:#bf616a;">result</span><span>: any) {
+</span><span>        </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">err</span><span>) {
+</span><span>          </span><span style="color:#8fa1b3;">reject</span><span>(</span><span style="color:#bf616a;">err</span><span>);
+</span><span>        }
+</span><span>        </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">result</span><span>.</span><span style="color:#bf616a;">error</span><span>) {
+</span><span>          </span><span style="color:#8fa1b3;">reject</span><span>(</span><span style="color:#bf616a;">result</span><span>.</span><span style="color:#bf616a;">error</span><span>);
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#8fa1b3;">resolve</span><span>(</span><span style="color:#bf616a;">result</span><span>.</span><span style="color:#bf616a;">result</span><span>);
+</span><span>      }
+</span><span>    );
+</span><span>  });
+</span><span>};
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">signature </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">signChallenge</span><span>(</span><span style="color:#bf616a;">publicAddress</span><span>, </span><span style="color:#bf616a;">challenge</span><span>);
+</span><span>
+</span><span style="color:#65737e;">// send the signature to the server
+</span><span style="color:#65737e;">// this is a HTTP POST to the server, responding with the JWT if success
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">jwt </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">getJwt</span><span>(</span><span style="color:#bf616a;">publicAddress</span><span>, </span><span style="color:#bf616a;">signature</span><span>);
+</span><span>
+</span><span style="color:#65737e;">// now we can use this JWT in our HTTP request
+</span></code></pre>
+<h3 id="server">Server</h3>
+<p>On the back end side, it’s really simple. Here are the main parts of
+the authentication flow.</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#65737e;">// /////
+</span><span style="color:#65737e;">// SERVER
+</span><span>
+</span><span style="color:#65737e;">// to generate a challenge, wecan use uuid
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">v4 </span><span style="color:#b48ead;">as </span><span style="color:#bf616a;">uuidv4 </span><span>} </span><span style="color:#b48ead;">from </span><span>&quot;</span><span style="color:#a3be8c;">uuid</span><span>&quot;;
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">generateChallenge </span><span>= (): string </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#8fa1b3;">uuidv4</span><span>();
+</span><span>};
+</span><span>
+</span><span style="color:#65737e;">// ..........
+</span><span>
+</span><span style="color:#65737e;">// to verify a signature, we can use a library like web3js or etherjs
+</span><span style="color:#65737e;">// here is an example with web3js
+</span><span>
+</span><span style="color:#b48ead;">import </span><span style="color:#bf616a;">Web3 </span><span style="color:#b48ead;">from </span><span>&quot;</span><span style="color:#a3be8c;">web3</span><span>&quot;;
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">verifySignature </span><span>= </span><span style="color:#b48ead;">async </span><span>(
+</span><span>  </span><span style="color:#bf616a;">publicAddress</span><span>: string,
+</span><span>  </span><span style="color:#bf616a;">challenge</span><span>: string,
+</span><span>  </span><span style="color:#bf616a;">signature</span><span>: string
+</span><span>): Promise&lt;boolean&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">address </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">web3</span><span>.</span><span style="color:#bf616a;">eth</span><span>.</span><span style="color:#bf616a;">accounts</span><span>.</span><span style="color:#8fa1b3;">recover</span><span>(</span><span style="color:#bf616a;">challenge</span><span>, </span><span style="color:#bf616a;">signature</span><span>);
+</span><span>  </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">address</span><span>.</span><span style="color:#96b5b4;">toLowerCase</span><span>() === </span><span style="color:#bf616a;">publicAddress</span><span>.</span><span style="color:#96b5b4;">toLowerCase</span><span>();
+</span><span>};
+</span></code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>Doing authentication with an Ethereum account is pretty easy ! Instead
+of comparing the hash of the password sent and the hash of the
+password in the database, we ask the user to sign a message we his
+private key. We can then verify the signature and authenticate the
+user.</p>
+<p>🎉🎉</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

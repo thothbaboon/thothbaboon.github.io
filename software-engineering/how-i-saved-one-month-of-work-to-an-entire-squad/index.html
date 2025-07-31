@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="How we use the adapter pattern to simplify the first version of a feature by keeping the logic of the long term vision.">
+    <title> | How I Saved One Month of Work to an Entire Squad</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">How I Saved One Month of Work to an Entire Squad</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2023-11-07" class="post-date">
+                    November 07, 2023
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <h2 id="introduction-to-the-feature-we-were-working-on">Introduction to the Feature We Were Working On</h2>
+<p>In every company, finance teams define <strong>budgets</strong> once a year, following a <strong>budgetary exercise</strong>.</p>
+<p>The goal was to model the budgetary exercise in our software, so the companies using our software could</p>
+<ul>
+<li>Link their spendings (that we collected on our platform) to budgets</li>
+<li>See the budgets consumptions in real time, and see if they spent as planned (or not)</li>
+</ul>
+<p>Here is how a simple annual budget could look like:</p>
+<p><img src="/how-i-saved-one-month-of-work-to-an-entire-squad/exercice.png" alt="Relation" /></p>
+<p>In this example, the budgets correspond to different teams in the company, and each budget amount is splitted into <strong>expense categories</strong>.</p>
+<p>Here are the simplified entities for this feature.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">type </span><span>BudgetaryExercise = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">startDate</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">endDate</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">budgets</span><span>: Budget[];
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">type </span><span>Budget = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">budgetaryExerciseId</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">amountByExpenseCategory</span><span>: Map&lt;ExpenseCategoryId, MonetaryValue&gt;;
+</span><span>};
+</span></code></pre>
+<h2 id="proof-of-concept-and-first-version">Proof of Concept and First Version</h2>
+<p>We started by implementing a PoC, with the entities described above.</p>
+<p>The PoC was approved buy our test users, so we decided to implemented a first version for production.</p>
+<p>The idea was to start with a simplified version of this feature, with no split by expense categories, and add this split later.</p>
+<p>There was no defined timeline — could have been in 1 month or 1 year.</p>
+<h2 id="the-problem">The Problem</h2>
+<p>The feature was a bit more complex than explained.</p>
+<p>One important missing concept here is <strong>budget breakdown.</strong></p>
+<p>A <strong>breakdown</strong> is the result of a computation made on a budget of the following amounts:</p>
+<ul>
+<li>Used (payments)</li>
+<li>Committed (amount “locked” for planned payments)</li>
+<li>Available</li>
+<li>Used exceeded</li>
+<li>Committed exceeded</li>
+</ul>
+<p>A breakdown can be by expense categories.</p>
+<p>In the PoC, we’ve already built a big part of the logic of the feature, with budget splitted by expense categories.</p>
+<p>The idea was to rewrite everything without this split, knowing that we would have to add it back some day.</p>
+<p><strong>This felt wrong to me</strong>. It would not be easy to add the split later.</p>
+<ul>
+<li>It would introduce breaking changes.</li>
+<li>The feature might have evolved since then, so it may not simply be a copy/paste from the PoC.</li>
+<li>There would be data in production to migrate to the new model, and here we are talking about money and analytics that drives the companies — we can’t make mistake here.</li>
+<li>The unit tests would have to be rewritten — we might break something without knowing it.</li>
+</ul>
+<h2 id="a-possibly-good-idea-bulb">A Possibly Good Idea 💡</h2>
+<p>My idea was to keep the logic with the split by expense categories but to expose a simplified version from the API.</p>
+<p>Doing this would allow the front end developers to build the first version while keeping the split by expense categories unchanged on the backend.</p>
+<p>It’s actually easy to fake the “no split” using the “split” logic and data model.</p>
+<p>Instead of:</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">split </span><span>= new Map([
+</span><span>	[&quot;</span><span style="color:#a3be8c;">Freelance and experts</span><span>&quot;, </span><span style="color:#d08770;">200</span><span>],
+</span><span>	[&quot;</span><span style="color:#a3be8c;">Tools and subscriptions</span><span>&quot;, </span><span style="color:#d08770;">800</span><span>],
+</span><span>	[&quot;</span><span style="color:#a3be8c;">Server and COGS tools</span><span>&quot;, </span><span style="color:#d08770;">0</span><span>],
+</span><span>]);
+</span></code></pre>
+<p>We can do:</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">split </span><span>= new Map([[&quot;</span><span style="color:#a3be8c;">default</span><span>&quot;, </span><span style="color:#d08770;">1000</span><span>]]);
+</span></code></pre>
+<p>Which means there is still a split, but only in a “fake” expense category called <strong>default</strong>.</p>
+<h3 id="simplifiedbudget">SimplifiedBudget</h3>
+<p>Now instead of the <code>Budget</code> entity previously introduced, we can have this <code>SimplifiedBudget</code> with a single amount instead of a <code>Map</code> to store the amount for each expense category.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">type </span><span>SimplifiedBudget = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">budgetaryExerciseId</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">amount</span><span>: MonetaryValue;
+</span><span>};
+</span></code></pre>
+<h3 id="from-simplifiedbudget-to-budget">From SimplifiedBudget to Budget</h3>
+<p><code>SimplifiedBudget</code> can be easily converted to <code>Budget</code> using the <strong>default</strong> expense category.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#bf616a;">amountByExpenseCategory </span><span>= new Map([[&quot;</span><span style="color:#a3be8c;">default</span><span>&quot;, </span><span style="color:#bf616a;">simplifiedBudget</span><span>.</span><span style="color:#bf616a;">amount</span><span>]]);
+</span></code></pre>
+<h3 id="from-budget-to-simplifiedbudget">From Budget to SimplifiedBudget</h3>
+<p>Simply take the amount of the default expense category.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#bf616a;">amount </span><span>= </span><span style="color:#bf616a;">amountByExpenseCategory</span><span>.</span><span style="color:#96b5b4;">get</span><span>(&quot;</span><span style="color:#a3be8c;">default</span><span>&quot;);
+</span></code></pre>
+<h2 id="a-perfect-use-case-for-the-adapter-pattern">A Perfect Use Case for the Adapter Pattern</h2>
+<p>Instead of having the <code>BudgetController</code> calling directly the <code>BudgetService</code> (that contains all the logic with split by expense category)</p>
+<p><img src="/how-i-saved-one-month-of-work-to-an-entire-squad/plug.png" alt="Relation" /></p>
+<p>There would be an adapter in between that would do the conversion from a <code>SimplifiedBudget</code> to a <code>Budget</code>, and from a <code>Budget</code> to a <code>SimplifiedBudget</code>.</p>
+<p><img src="/how-i-saved-one-month-of-work-to-an-entire-squad/adapter.png" alt="Relation" /></p>
+<p>The <code>BudgetController</code> calls the <code>BudgetService</code>.</p>
+<p>But the <code>SimplifiedBudgetController</code> calls the adapter (<code>SimplifiedBudgetService</code>) that contains the logic to convert a <code>SimplifiedBudget</code> to a <code>Budget</code>, and the adapter then call the <code>BudgetService</code>.</p>
+<ul>
+<li><code>SimplifiedBudgetController</code> doesn’t know what is a <code>Budget</code> or <code>BudgetService</code>.</li>
+<li><code>BudgetService</code> doesn’t know about <code>SimplifiedBudget</code></li>
+<li><code>BudgetController</code> is usable in parallel, to use <code>Budget</code> with the split by expense category (already ready for the second version of this feature)</li>
+</ul>
+<p><img src="/how-i-saved-one-month-of-work-to-an-entire-squad/dependencies.png" alt="Relation" /></p>
+<p>In the code, <code>SimplifedBudgetService</code> has a similar interface to <code>BudgetService</code>, but using <code>SimplifiedBudget</code> instead of <code>Budget</code>.</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#b48ead;">export interface </span><span>BudgetService {
+</span><span>	</span><span style="color:#8fa1b3;">findById</span><span>: (</span><span style="color:#bf616a;">id</span><span>: string) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;Budget | undefined&gt;;
+</span><span>	</span><span style="color:#8fa1b3;">deleteById</span><span>: (</span><span style="color:#bf616a;">id</span><span>: string) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;DeleteBudgetByIdResult&gt;;
+</span><span>	</span><span style="color:#8fa1b3;">create</span><span>: (</span><span style="color:#bf616a;">dto</span><span>: BudgetDto) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;CreateBudgetResult&gt;;
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">export interface </span><span>SimplifiedBudgetService {
+</span><span>	</span><span style="color:#8fa1b3;">findById</span><span>: (</span><span style="color:#bf616a;">id</span><span>: string) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;SimplifiedBudget | undefined&gt;;
+</span><span>	</span><span style="color:#8fa1b3;">create</span><span>: (</span><span style="color:#bf616a;">dto</span><span>: SimplifiedBudgetDto) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;CreateSimplifiedBudgetResult&gt;;
+</span><span>}
+</span></code></pre>
+<h2 id="benefits">Benefits</h2>
+<ul>
+<li>It keeps the Budget entity and logic unchanged, but provides a SimplifiedBudget for a simplified version of the feature.</li>
+<li>It was super light and quick to implement, the adapter code is very simple. Introducing the adapter pattern was quicker than removing and retesting the logic for the first version.</li>
+<li>No data migration. A data migration is always complicated and stressful, whereas the adapter here is easily testable.</li>
+<li>No changes needed on the backend to introduce the split by expense categories in the product for the second version of the feature.</li>
+</ul>
+<p>I switched to another team after the first version and the adapter.</p>
+<p>The next year I heard from the team that they released the split by expense categories, and that this adapter made it extremely simple. They just had to made the changes in the front end to handle expense categories, and call the routes of <code>BudgetController</code> rather than <code>SimplifiedBudgetController</code>.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

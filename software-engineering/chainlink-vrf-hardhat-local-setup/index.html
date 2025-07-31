@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Learn how to set up Chainlink VRF mock locally to develop and test a dApp with an experience close to a Node.js backend">
+    <title> | How to Use Chainlink VRF on Hardhat for dApp Local Development</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">How to Use Chainlink VRF on Hardhat for dApp Local Development</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-06-24" class="post-date">
+                    June 24, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>Chainlink VRF is excellent for generating verifiably random numbers in smart contracts. However, setting up a complete dApp with VRF for local development can be challenging at first.</p>
+<p>While Chainlink provides <a href="https://docs.chain.link/vrf/v2-5/subscription/test-locally">documentation for using a VRF Coordinator mock with Remix</a>, this approach is limited to simple contract testing. What if you want to build and test a full dApp locally with a smooth development experience?</p>
+<p>This article takes it to the next level, showing you how to integrate the VRF mock into a complete local development environment using Hardhat. You'll learn how to set up a dApp that feels as responsive as working with a traditional Node.js backend, while still leveraging the power of blockchain and Chainlink's VRF.</p>
+<p>You can find the complete project <a href="https://github.com/antoineprdhmm/vrf-hardhat-local-setup">here on my GitHub</a>. This article focuses on the most important concepts, so feel free to clone the project locally to fully understand the implementation.</p>
+<h2 id="the-project">The Project</h2>
+<p>The dApp is a "Flip a coin" app that demonstrates how to integrate Chainlink VRF into a complete application. Here's how it works:</p>
+<ol>
+<li>User clicks on a Flip button in the UI</li>
+<li>The app calls the smart contract <code>flip</code> method</li>
+<li>The contract requests a random number from Chainlink VRF</li>
+<li>When the random number is received, the contract determines the result:
+<ul>
+<li>If the number is even → "Heads"</li>
+<li>If the number is odd → "Tails"</li>
+</ul>
+</li>
+<li>The result is emitted as an event and displayed in the UI</li>
+</ol>
+<h3 id="tech-stack">Tech Stack</h3>
+<ul>
+<li><strong>Hardhat</strong> - Blockchain development environment and testing framework</li>
+<li><strong>Ethers v6</strong> - Library for interacting with the blockchain (both frontend and backend)</li>
+<li><strong>Chainlink VRF v2.5</strong> - For generating verifiable random numbers</li>
+<li><strong>Next.js</strong> - React framework for the frontend (production-ready setup)</li>
+</ul>
+<h2 id="smart-contracts-and-deployment">Smart Contracts and Deployment</h2>
+<h3 id="flipcoin-main-smart-contract">FlipCoin - Main Smart Contract</h3>
+<p>The contract is located at <a href="https://github.com/antoineprdhmm/vrf-hardhat-local-setup/blob/main/hardhat/contracts/FlipCoin.sol">hardhat/contracts/FlipCoin.sol</a>.</p>
+<p>Since it needs to request random numbers from Chainlink VRF, it must inherit from <code>VRFConsumerBaseV2Plus</code> (V2.5 is sometimes called V2Plus).</p>
+<p>Because it inherits this interface, it must implement <code>fulfillRandomWords</code> which is the callback function that receives the random words requested.</p>
+<p>When the user clicks on the "Flip" button in the app, it's going to call the <code>flip</code> method of the smart contract.</p>
+<pre data-lang="solidity" style="background-color:#2b303b;color:#c0c5ce;" class="language-solidity "><code class="language-solidity" data-lang="solidity"><span>function flip() public {
+</span><span>    // Request random number from Chainlink VRF
+</span><span>    // Will revert if subscription is not set and funded.
+</span><span>    uint256 requestId = s_vrfCoordinator.requestRandomWords(
+</span><span>        VRFV2PlusClient.RandomWordsRequest({
+</span><span>            keyHash: s_keyHash,
+</span><span>            subId: s_subscriptionId,
+</span><span>            requestConfirmations: REQUEST_CONFIRMATIONS,
+</span><span>            callbackGasLimit: CALLBACK_GAS_LIMIT,
+</span><span>            numWords: NUM_WORDS,
+</span><span>            extraArgs: VRFV2PlusClient._argsToBytes(
+</span><span>                VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
+</span><span>            )
+</span><span>        })
+</span><span>    );
+</span><span>
+</span><span>    // Store pending request to track which user made the request
+</span><span>    s_requests[requestId] = msg.sender;
+</span><span>
+</span><span>    // Emit event with request ID for debugging and manual fulfillment
+</span><span>    emit Flipping(msg.sender, requestId);
+</span><span>}
+</span></code></pre>
+<p>The method triggers a request to get the random words, which is fulfilled asynchronously.</p>
+<p><strong>⚠️ Important Note:</strong> When using the Mock, the request must be fulfilled manually as <a href="https://docs.chain.link/vrf/v2-5/subscription/test-locally#fulfill-the-vrf-request">explained in the documentation</a>. In production, this happens automatically.</p>
+<p>Once <code>VRFCoordinatorV2Plus</code> receives the random words, it's going to call the callback method <code>fulfillRandomWords</code> on the FlipCoin contract.</p>
+<p>This is why it's important to keep track of which sender is associated with the request ID:</p>
+<pre data-lang="solidity" style="background-color:#2b303b;color:#c0c5ce;" class="language-solidity "><code class="language-solidity" data-lang="solidity"><span>s_requests[requestId] = msg.sender; 
+</span></code></pre>
+<p>When receiving the random words, the contract computes the result (Tails or Heads), finds which address is associated with this request, and emits an event with the result:</p>
+<pre data-lang="solidity" style="background-color:#2b303b;color:#c0c5ce;" class="language-solidity "><code class="language-solidity" data-lang="solidity"><span>function fulfillRandomWords(
+</span><span>    uint256 requestId,
+</span><span>    uint256[] calldata randomWords
+</span><span>) internal override {
+</span><span>    address player = s_requests[requestId];
+</span><span>    require(player != address(0), &quot;Request not found&quot;);
+</span><span>
+</span><span>    // Clean up
+</span><span>    delete s_requests[requestId];
+</span><span>
+</span><span>    string memory result;
+</span><span>
+</span><span>    // Use the random value to determine the result of the coin flip
+</span><span>    if (randomWords[0] % 2 == 0) {
+</span><span>        result = &quot;Heads&quot;;
+</span><span>    } else {
+</span><span>        result = &quot;Tails&quot;;
+</span><span>    }
+</span><span>
+</span><span>    emit Flipped(player, result);
+</span><span>}
+</span></code></pre>
+<p>The app simply listens to the events, filtering by player address to only receive the events of the connected player.</p>
+<h3 id="application-flow">Application Flow</h3>
+<p>Here is a schema describing the flow of the application:</p>
+<p><img src="/chainlink_vrf_hardhat_local_setup/flow.png" alt="flow" /></p>
+<h3 id="vrfcoordinatorv2-5mock">VRFCoordinatorV2_5Mock</h3>
+<p>The remaining parts to explore for the FlipCoin smart contract are the constructors and attributes. These will be used to request the random words.</p>
+<pre data-lang="solidity" style="background-color:#2b303b;color:#c0c5ce;" class="language-solidity "><code class="language-solidity" data-lang="solidity"><span>constructor(
+</span><span>    uint256 subscriptionId,
+</span><span>    bytes32 keyHash,
+</span><span>    address vrfCoordinator
+</span><span>) VRFConsumerBaseV2Plus(vrfCoordinator) {
+</span><span>    s_subscriptionId = subscriptionId;
+</span><span>    s_keyHash = keyHash;
+</span><span>}
+</span></code></pre>
+<p>The VRF Coordinator is the contract that we call to request the random words (see the <code>flip</code> method above), and that will call our callback function with the random words when they are ready.</p>
+<p>This means before deploying FlipCoin, we need to deploy a VRF Coordinator.</p>
+<p>Chainlink provides a mock that is very convenient to use. The only thing to do is to create a file called <code>VRFCoordinatorV2_5Mock.sol</code> in the hardhat contracts folder next to the <code>FlipCoin.sol</code> contract, and import the mock inside.</p>
+<pre data-lang="solidity" style="background-color:#2b303b;color:#c0c5ce;" class="language-solidity "><code class="language-solidity" data-lang="solidity"><span>// SPDX-License-Identifier: MIT
+</span><span>pragma solidity ^0.8.28;
+</span><span>import &quot;@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol&quot;;
+</span></code></pre>
+<p>The VRF Coordinator constructor requires some parameters, which are fees and prices. Any values work, but lower values are more convenient for testing:</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">vrfCoordinatorFactory </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">hre</span><span>.</span><span style="color:#bf616a;">ethers</span><span>.</span><span style="color:#8fa1b3;">getContractFactory</span><span>(
+</span><span>    &quot;</span><span style="color:#a3be8c;">VRFCoordinatorV2_5Mock</span><span>&quot;
+</span><span>);
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">vrfCoordinator </span><span>= (</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">vrfCoordinatorFactory</span><span>.</span><span style="color:#8fa1b3;">deploy</span><span>(
+</span><span>    </span><span style="color:#d08770;">1000</span><span>, </span><span style="color:#65737e;">// set low fee (more convenient for testing)
+</span><span>    </span><span style="color:#d08770;">10</span><span>, </span><span style="color:#65737e;">// set low gas price (more convenient for testing),
+</span><span>    </span><span style="color:#d08770;">5200000000000000 </span><span style="color:#65737e;">// WEI for 1 LINK
+</span><span>)) </span><span style="color:#b48ead;">as </span><span>unknown </span><span style="color:#b48ead;">as </span><span>VRFCoordinatorV2_5Mock;
+</span></code></pre>
+<h3 id="vrf-subscription">VRF Subscription</h3>
+<p>To request random numbers, a subscription should be created, funded, and provided to the coordinator. The subscription will be debited automatically by the VRF Coordinator.</p>
+<p><a href="https://docs.chain.link/vrf/v2-5/overview/subscription#request-and-receive-data">See the documentation explaining how it works in detail</a>.</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#65737e;">// Create a new subscription
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">subscriptionTx </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">vrfCoordinator</span><span>.</span><span style="color:#8fa1b3;">createSubscription</span><span>();
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">subscriptionReceipt </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">subscriptionTx</span><span>.</span><span style="color:#8fa1b3;">wait</span><span>();
+</span><span>
+</span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">subscriptionReceipt</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(&quot;</span><span style="color:#a3be8c;">Failed to create subscription</span><span>&quot;);
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">if </span><span>(!(</span><span style="color:#bf616a;">subscriptionReceipt</span><span>.</span><span style="color:#bf616a;">logs</span><span>[</span><span style="color:#d08770;">0</span><span>] instanceof hre.ethers.EventLog)) {
+</span><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(&quot;</span><span style="color:#a3be8c;">Unexpected receipt log type</span><span>&quot;);
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">subscriptionId </span><span>= </span><span style="color:#bf616a;">subscriptionReceipt</span><span>.</span><span style="color:#bf616a;">logs</span><span>[</span><span style="color:#d08770;">0</span><span>].</span><span style="color:#bf616a;">args</span><span>.</span><span style="color:#bf616a;">subId</span><span>;
+</span><span>
+</span><span style="color:#65737e;">// Fund the subscription with LINK tokens
+</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">vrfCoordinator</span><span>.</span><span style="color:#8fa1b3;">fundSubscription</span><span>(</span><span style="color:#bf616a;">subscriptionId</span><span>, </span><span style="color:#d08770;">1000000000000000</span><span>);
+</span></code></pre>
+<h3 id="deploying-the-flipcoin-contract">Deploying the FlipCoin contract</h3>
+<p>Now that the VRF Coordinator is deployed and the subscription is funded, FlipCoin can be deployed:</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">FlipCoinFactory </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">hre</span><span>.</span><span style="color:#bf616a;">ethers</span><span>.</span><span style="color:#8fa1b3;">getContractFactory</span><span>(&quot;</span><span style="color:#a3be8c;">FlipCoin</span><span>&quot;);
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">flipCoin </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">FlipCoinFactory</span><span>.</span><span style="color:#8fa1b3;">deploy</span><span>(
+</span><span>    </span><span style="color:#bf616a;">subscriptionId</span><span>,
+</span><span>    &quot;</span><span style="color:#a3be8c;">0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc</span><span>&quot;, </span><span style="color:#65737e;">// arbitrary bytes32 for testing
+</span><span>    </span><span style="color:#bf616a;">vrfCoordinatorAddress
+</span><span>);
+</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">flipCoin</span><span>.</span><span style="color:#8fa1b3;">waitForDeployment</span><span>();
+</span></code></pre>
+<p>The second argument is the <code>keyHash</code>, which is the maximum gas willing to pay for a request. In our situation, it doesn't matter as it's only for testing.</p>
+<p>The last thing to do is to tell the VRF Coordinator that FlipCoin can use the subscription:</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">flipCoinAddress </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">flipCoin</span><span>.</span><span style="color:#8fa1b3;">getAddress</span><span>();
+</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">vrfCoordinator</span><span>.</span><span style="color:#8fa1b3;">addConsumer</span><span>(</span><span style="color:#bf616a;">subscriptionId</span><span>, </span><span style="color:#bf616a;">flipCoinAddress</span><span>);
+</span></code></pre>
+<h2 id="unit-testing">Unit Testing</h2>
+<p>Now that the VRF Coordinator and FlipCoin contracts are deployed, the subscription funded, and FlipCoin allowed to request random words using this subscription, let's flip some coins.</p>
+<p>The first thing is to call flip with one signer and get the request ID from the event emitted at the end of the flip method:</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">flipCoinWithPlayer </span><span>= </span><span style="color:#bf616a;">flipCoin</span><span>.</span><span style="color:#8fa1b3;">connect</span><span>(</span><span style="color:#bf616a;">player</span><span>);
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">flipTx </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">flipCoinWithPlayer</span><span>.</span><span style="color:#8fa1b3;">flip</span><span>();
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">flipReceipt </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">flipTx</span><span>.</span><span style="color:#8fa1b3;">wait</span><span>();
+</span><span>
+</span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">flipReceipt</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(&quot;</span><span style="color:#a3be8c;">Flip transaction failed</span><span>&quot;);
+</span><span>}
+</span><span>
+</span><span style="color:#65737e;">// Get the requestId from the RandomWordsRequested event
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">flippingEvent </span><span>= </span><span style="color:#bf616a;">vrfCoordinator</span><span>.</span><span style="color:#bf616a;">interface</span><span>.</span><span style="color:#8fa1b3;">parseLog</span><span>(
+</span><span>    </span><span style="color:#bf616a;">flipReceipt</span><span>.</span><span style="color:#bf616a;">logs</span><span>[</span><span style="color:#d08770;">0</span><span>]
+</span><span>);
+</span><span>
+</span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">flippingEvent</span><span>) {
+</span><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(&quot;</span><span style="color:#a3be8c;">Request event not found</span><span>&quot;);
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span>{ </span><span style="color:#bf616a;">requestId </span><span>} = </span><span style="color:#bf616a;">flippingEvent</span><span>.</span><span style="color:#bf616a;">args</span><span>;
+</span></code></pre>
+<p>Then, we need to fulfill the VRF request manually. Obviously in production it's done automatically. But the mock requires us to do it.</p>
+<p>We could do it by calling this method: <code>vrfCoordinator.fulfillRandomWords</code>.</p>
+<p>But the mock provides a more convenient method - <code>fulfillRandomWordsWithOverride</code> - which allows us to choose which words to return. This way we can test specific cases, and even use a real random words generator if we want random words:</p>
+<pre data-lang="tsx" style="background-color:#2b303b;color:#c0c5ce;" class="language-tsx "><code class="language-tsx" data-lang="tsx"><span style="color:#b48ead;">let </span><span style="color:#bf616a;">fulfillRandomWordsTx </span><span>=
+</span><span>  </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">vrfCoordinator</span><span>.</span><span style="color:#8fa1b3;">fulfillRandomWordsWithOverride</span><span>(
+</span><span>    </span><span style="color:#bf616a;">requestId</span><span>,
+</span><span>    </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">flipCoin</span><span>.</span><span style="color:#8fa1b3;">getAddress</span><span>(),
+</span><span>    [</span><span style="color:#d08770;">9</span><span>] </span><span style="color:#65737e;">// choose which values to return
+</span><span>  );
+</span><span style="color:#b48ead;">let </span><span style="color:#bf616a;">fulfillRandomWordsReceipt </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">fulfillRandomWordsTx</span><span>.</span><span style="color:#8fa1b3;">wait</span><span>();
+</span></code></pre>
+<p>FlipCoin's <code>fulfillRandomWords</code> will be called with [9], and it's going to emit an event with the result.</p>
+<p>This result can be tested based on the value provided to <code>fulfillRandomWordsWithOverride</code>.</p>
+<h2 id="testing-with-the-app">Testing with the App</h2>
+<p>Unit tests are nice, but what if you want to play with your app locally?</p>
+<p>Well, it's exactly the same thing, except that:</p>
+<ul>
+<li><code>flip</code> method will be called from the app, when clicking on the Flip button</li>
+<li>We need to figure out a way to call <code>fulfillRandomWordsWithOverride</code> for local testing. Again, in production there will be no need to call this method, it's just to fulfill the VRF request on the mock.</li>
+</ul>
+<p>Remember, when calling the <code>flip</code> method, it emits a <code>Flipping</code> event with the request ID inside.</p>
+<p>In the app, we can listen for this event, and <code>console.log</code> the request ID.</p>
+<p>To fulfill the VRF request, I made a little script: <a href="https://github.com/antoineprdhmm/vrf-hardhat-local-setup/blob/main/hardhat/scripts/fulfillVrfRequest.ts">fulfillVrfRequest.ts</a></p>
+<p>This script takes 2 parameters:</p>
+<ul>
+<li>The ID of the request to fulfill</li>
+<li>The number to send to <code>fulfillRandomWords</code></li>
+</ul>
+<p>So when clicking on the Flip button:</p>
+<ul>
+<li>A Flipping event with the request ID is emitted</li>
+<li>The request is pending</li>
+</ul>
+<p>When executing the script:</p>
+<ul>
+<li>The request is fulfilled with the given number</li>
+<li>A Flipped event is emitted with the result: Tails or Heads</li>
+</ul>
+<h2 id="conclusion">Conclusion</h2>
+<p>This is how you can use VRF to write unit tests or play with your app locally, without relying on any test network.</p>
+<p>This approach provides several benefits:</p>
+<ul>
+<li><strong>Full Control</strong>: Complete control over the VRF contract, especially with the override method</li>
+<li><strong>Fast Development</strong>: No network delays or gas costs during development</li>
+<li><strong>Predictable Testing</strong>: You can test specific scenarios by controlling the random values</li>
+<li><strong>Developer Experience</strong>: The development experience is close to working with a Node.js backend</li>
+</ul>
+<p>This setup allows you to develop and test your VRF-powered dApp efficiently while maintaining the same patterns you'll use in production.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

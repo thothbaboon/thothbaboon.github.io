@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Finding the right distribution of rewards and probabilities for a lotery game, using a genetic algorithm.">
+    <title> | Calibrating a Loot Table Using a Genetic Algorithm</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Calibrating a Loot Table Using a Genetic Algorithm</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2025-07-03" class="post-date">
+                    July 03, 2025
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <h1 id="introduction-to-the-project">Introduction to the Project</h1>
+<p>👉 <a href="https://github.com/antoineprdhmm/loot-table-tuning">Github Repository</a></p>
+<p>I was building a lottery game on the blockchain when I ran into this problem. I don’t need to go into much detail about the project itself — let’s keep it simple.</p>
+<p>Say you buy a pack for $10. This pack contains a value between $3 and $50.</p>
+<p>That means when you open it, you might lose a few dollars or win up to 5 times your initial investment.</p>
+<p>There are 4 tiers that determine the value range of each pack. The tier is randomly selected when you buy the pack. Then, when you open it, a value is randomly generated within that tier’s range.</p>
+<p>Example of tiers:</p>
+<ul>
+<li><strong>Common</strong> – $3 to $8 – 30% probability</li>
+<li><strong>Uncommon</strong> – $8 to $12 – 45% probability</li>
+<li><strong>Rare</strong> – $12 to $20 – 15% probability</li>
+<li><strong>Epic</strong> – $20 to $50 – 10% probability</li>
+</ul>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span>(</span><span style="color:#d08770;">8 </span><span>- </span><span style="color:#d08770;">3</span><span>) * </span><span style="color:#d08770;">30</span><span>% + (</span><span style="color:#d08770;">12 </span><span>- </span><span style="color:#d08770;">8</span><span>) * </span><span style="color:#d08770;">45</span><span>% + (</span><span style="color:#d08770;">20 </span><span>- </span><span style="color:#d08770;">12</span><span>) * </span><span style="color:#d08770;">15</span><span>% + (</span><span style="color:#d08770;">50 </span><span>- </span><span style="color:#d08770;">20</span><span>) * </span><span style="color:#d08770;">10</span><span>%
+</span></code></pre>
+<p>This example looks nice, but the values have been set arbitrarily — which is a bad idea when money and probabilities are involved. It's worth doing some actual calculations.</p>
+<p>To make the project viable, I need to make sure:</p>
+<ul>
+<li>I make a profit <strong>over time</strong> (this isn’t a charity),</li>
+<li>I keep users engaged and excited to buy more packs.</li>
+</ul>
+<p>This means I need to carefully define the <strong>ranges</strong> and <strong>probabilities</strong> for each tier.</p>
+<h1 id="expected-value">Expected Value</h1>
+<p>The <strong>expected value</strong> (EV) is the average value a pack returns over time.</p>
+<p>A pack costs $10, and I need to make a profit. So the EV should be <strong>less than $10</strong>.</p>
+<p>According to ChatGPT, an EV between 80–90% of the pack price offers a good balance — users feel like they get value, and I still make a profit.</p>
+<p>I chose 85%, meaning the EV should be <strong>$8.50</strong> — so I make an average profit of $1.50 per pack.</p>
+<p>The EV is calculated by multiplying the <strong>average value of each tier</strong> by its <strong>probability</strong>.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#bf616a;">EV </span><span>= (Avg T1) * P1 + (Avg T2) * P2 + (Avg T3) * P3 + (Avg T4) * P4
+</span></code></pre>
+<p>With tier ranges defined as <code>(min, max)</code>, the average value per tier is <code>(min + max) / 2</code>.</p>
+<p>So, to get an EV of $8.50, I need to find values for:</p>
+<ul>
+<li>T1_min, T1_max, P1</li>
+<li>T2_min, T2_max, P2</li>
+<li>T3_min, T3_max, P3</li>
+<li>T4_min, T4_max, P4</li>
+</ul>
+<p>Let’s go back to our example:</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#bf616a;">EV </span><span>= (</span><span style="color:#d08770;">8 </span><span>- </span><span style="color:#d08770;">3</span><span>) * </span><span style="color:#d08770;">30</span><span>% + (</span><span style="color:#d08770;">12 </span><span>- </span><span style="color:#d08770;">8</span><span>) * </span><span style="color:#d08770;">45</span><span>% + (</span><span style="color:#d08770;">20 </span><span>- </span><span style="color:#d08770;">12</span><span>) * </span><span style="color:#d08770;">15</span><span>% + (</span><span style="color:#d08770;">50 </span><span>- </span><span style="color:#d08770;">20</span><span>) * </span><span style="color:#d08770;">10</span><span>%
+</span><span style="color:#bf616a;">EV </span><span>= </span><span style="color:#d08770;">6.35
+</span></code></pre>
+<p>This means I’d be making <strong>$3.65 profit per pack on average</strong>.</p>
+<p>That’s great for me — but not for the user. And if it’s not good for the user, it’s not good for me in the long run.</p>
+<p>So yeah, it was worth doing the math.</p>
+<p><strong>The Big Question:</strong></p>
+<p><strong>EV = 8.5</strong> has <em>many</em> possible solutions. Which one should I pick?</p>
+<h1 id="finding-a-good-fit">Finding a Good Fit</h1>
+<p>Some loot table combinations are boring. Others are exciting.</p>
+<p>Some make you lose often but occasionally win big. Others feel more balanced and linear.</p>
+<p>That’s why it’s important to define what a <strong>good fit</strong> actually means.</p>
+<h2 id="probabilities">Probabilities</h2>
+<p>I decided to keep the probabilities for each tier between <strong>4% and 65%</strong>.</p>
+<p>Obviously, all tier probabilities must sum to 100%.</p>
+<p>This range is arbitrary, but it feels right — it allows for rare tiers without making them frustratingly impossible to hit. It also avoids a single dominant tier.</p>
+<p>Also, <strong>T4 (epic)</strong> must have the <strong>lowest probability</strong>, since it contains the highest rewards.</p>
+<h2 id="tier-price-ranges">Tier Price Ranges</h2>
+<p>Each tier’s price range must follow this logic:</p>
+<ul>
+<li>T4’s range must be above T3’s</li>
+<li>T3’s above T2’s</li>
+<li>T2’s above T1’s</li>
+</ul>
+<p>Additionally, the <strong>ranges should be wide enough</strong> to keep things surprising. A range like $8–$8.5 isn’t exciting.</p>
+<h2 id="expected-value-ev">Expected Value (EV)</h2>
+<p>The <strong>target EV is $8.50</strong>, but it doesn’t need to be exact. A small margin above or below is acceptable.</p>
+<h2 id="running-simulations">Running Simulations</h2>
+<p>The EV is a theoretical value — it’s only reached if you open an <strong>infinite number</strong> of packs.</p>
+<p>But in small runs, the <strong>actual return</strong> can vary a lot from the EV.</p>
+<p>That could be a problem when launching the app</p>
+<ul>
+<li>I don’t want to run into a <strong>big deficit</strong> in the app’s treasury.</li>
+<li>I don’t want users to feel like they’ve been <strong>ripped off</strong>.</li>
+</ul>
+<p>To reduce that risk, I made small simulations and compared the <strong>actual average outcome</strong> with the theoretical EV.</p>
+<h1 id="fitness-function">Fitness Function</h1>
+<p>Here’s one possible Python representation of a loot table:</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">LootTable</span><span style="color:#eff1f5;">:
+</span><span>    </span><span style="color:#b48ead;">def </span><span style="color:#96b5b4;">__init__</span><span>(</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">probabilities</span><span>: List[float], </span><span style="color:#bf616a;">prices</span><span>: List[float]):
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.probabilities = probabilities
+</span><span>        </span><span style="color:#bf616a;">self</span><span>.prices = prices
+</span></code></pre>
+<p>Using the earlier example:</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span>probabilities = [</span><span style="color:#d08770;">0.3</span><span>, </span><span style="color:#d08770;">0.45</span><span>, </span><span style="color:#d08770;">0.15</span><span>, </span><span style="color:#d08770;">0.1</span><span>]
+</span><span>prices = [</span><span style="color:#d08770;">3</span><span>, </span><span style="color:#d08770;">8</span><span>, </span><span style="color:#d08770;">12</span><span>, </span><span style="color:#d08770;">20</span><span>, </span><span style="color:#d08770;">50</span><span>]
+</span></code></pre>
+<p>From the previously discussed fitness criteria, we can now build a <strong>fitness function</strong> to evaluate a loot table.</p>
+<p>The function applies <strong>penalties</strong> based on how far the loot table deviates from our ideal configuration. The lower the score, the more "fit" the loot table is.</p>
+<pre data-lang="python" style="background-color:#2b303b;color:#c0c5ce;" class="language-python "><code class="language-python" data-lang="python"><span style="color:#b48ead;">def </span><span style="color:#8fa1b3;">compute_fitness</span><span>(</span><span style="color:#bf616a;">lt</span><span>: LootTable, </span><span style="color:#bf616a;">config</span><span>: Config) -&gt; float:
+</span><span>    score = </span><span style="color:#d08770;">0
+</span><span>
+</span><span>	</span><span style="color:#65737e;"># Deviation from theoretical EV
+</span><span>    ev = </span><span style="color:#bf616a;">get_expected_value_absolute_deviation</span><span>(lt, config)
+</span><span>
+</span><span>	</span><span style="color:#65737e;"># Run multiple short simulations
+</span><span>    sim_evs = [
+</span><span>        </span><span style="color:#bf616a;">get_simulation_results_absolute_deviation</span><span>(
+</span><span>            </span><span style="color:#bf616a;">run_simulations</span><span>(lt, config.genetic_algorithm.simulation_runs), config
+</span><span>        )
+</span><span>        </span><span style="color:#b48ead;">for </span><span style="color:#bf616a;">_ </span><span style="color:#b48ead;">in </span><span style="color:#96b5b4;">range</span><span>(</span><span style="color:#d08770;">20</span><span>)
+</span><span>    ]
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># Compare simulation mean to EV
+</span><span>    sim_evs_mean = </span><span style="color:#96b5b4;">sum</span><span>(sim_evs) / </span><span style="color:#96b5b4;">len</span><span>(sim_evs)
+</span><span>    sim_dev = </span><span style="color:#96b5b4;">abs</span><span>(</span><span style="color:#96b5b4;">abs</span><span>(ev) - </span><span style="color:#96b5b4;">abs</span><span>(sim_evs_mean))
+</span><span>    score += </span><span style="color:#96b5b4;">abs</span><span>(sim_dev) * </span><span style="color:#d08770;">1000
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># Add penalty for high standard deviation across simulations
+</span><span>    sim_std = statistics.</span><span style="color:#bf616a;">stdev</span><span>(sim_evs)
+</span><span>    score += sim_std * </span><span style="color:#d08770;">1000
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># Penalize EV deviation itself
+</span><span>    score += </span><span style="color:#96b5b4;">abs</span><span>(ev) * </span><span style="color:#d08770;">1000
+</span><span>
+</span><span>    </span><span style="color:#65737e;"># Structural penalties
+</span><span>    </span><span style="color:#b48ead;">if </span><span>not </span><span style="color:#bf616a;">get_are_prices_sorted</span><span>(lt):
+</span><span>        score += </span><span style="color:#d08770;">1000
+</span><span>    </span><span style="color:#b48ead;">if </span><span>not </span><span style="color:#bf616a;">get_are_probabilities_within_range</span><span>(lt, config):
+</span><span>        score += </span><span style="color:#d08770;">1000
+</span><span>    </span><span style="color:#b48ead;">if </span><span>not </span><span style="color:#bf616a;">get_is_highest_tier_lowest_probability</span><span>(lt):
+</span><span>        score += </span><span style="color:#d08770;">1000
+</span><span>    </span><span style="color:#b48ead;">if </span><span>not </span><span style="color:#bf616a;">get_are_ranges_wide_enough</span><span>(lt):
+</span><span>        score += </span><span style="color:#d08770;">1000
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span>score 
+</span></code></pre>
+<p>So now we can generate loot tables, compute their fitness score, and compare them.</p>
+<p>But generating them randomly isn't very efficient — we can do better!</p>
+<h1 id="using-a-genetic-algorithm">Using a Genetic Algorithm</h1>
+<p>Genetic algorithms are inspired by natural selection. The idea is that better-performing candidates are more likely to survive and propagate, leading to gradual improvement over generations.</p>
+<p>If you’d like to dive deeper: 👉 <a href="https://en.wikipedia.org/wiki/Genetic_algorithm">Wikipedia Genetic Algorithm</a></p>
+<p>This approach works well in our case, where we don’t just want <em>any</em> loot table that works — we want a <strong>good</strong> one.</p>
+<p>Instead of endlessly generating and testing random tables:</p>
+<ul>
+<li>We <strong>generate an initial population</strong> of random loot tables.</li>
+<li>Each loot table is evaluated using the fitness function.</li>
+<li>The best-performing tables (lowest score) are <strong>more likely to survive</strong>.</li>
+<li>The next generation is created via <strong>selection, crossover, and mutation</strong>.</li>
+<li>Over time, the population evolves toward better solutions.</li>
+</ul>
+<p>Here’s my configuration:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">genetic_algorithm</span><span>:
+</span><span>  </span><span style="color:#bf616a;">population_size</span><span>: </span><span style="color:#d08770;">1000
+</span><span>  </span><span style="color:#bf616a;">mutation_rate</span><span>: </span><span style="color:#d08770;">0.2
+</span><span>  </span><span style="color:#bf616a;">crossover_rate</span><span>: </span><span style="color:#d08770;">0.8
+</span><span>  </span><span style="color:#bf616a;">elite_size</span><span>: </span><span style="color:#d08770;">25
+</span><span>  </span><span style="color:#bf616a;">generations</span><span>: </span><span style="color:#d08770;">50
+</span><span>  </span><span style="color:#bf616a;">simulation_runs</span><span>: </span><span style="color:#d08770;">10
+</span></code></pre>
+<ul>
+<li><strong>Elite size</strong>: Number of top candidates directly selected for the next generation.</li>
+<li><strong>Simulation runs</strong>: Number of draws per short simulation in the fitness function. I keep this small on purpose to stress-test volatility. If you use 100+ draws, you just converge closer to the EV — which hides short-term deviation risks.</li>
+</ul>
+<p>The other parameters were chosen through testing. I tried larger population sizes, but it didn't improve results — it just made things slower. Increasing generations improved the outcome, but beyond 50 generations, improvements plateaued.</p>
+<h1 id="result">Result</h1>
+<p>The algorithm runs in a few seconds and returns results like this:</p>
+<pre data-lang="txt" style="background-color:#2b303b;color:#c0c5ce;" class="language-txt "><code class="language-txt" data-lang="txt"><span>FITNESS DEBUG:
+</span><span>- EV deviation: 0.2332935998983281
+</span><span>- Prices sorted: True
+</span><span>- Probabilities within range: True
+</span><span>- Highest tier lowest probability: True
+</span><span>- Contains duplicate prices: False
+</span><span>- Ranges wide enough: True
+</span><span>SIMULATIONS:
+</span><span>- Simulation results deviation: 1.0653241098043411
+</span><span>- Simulation results deviation: -0.7363306578779483
+</span><span>- Simulation results deviation: -1.5912145090228975
+</span><span>- Simulation results deviation: 0.04945076702478168
+</span><span>- Simulation results deviation: -1.1712967377203753
+</span><span>- Simulation results deviation: -0.0798430959134162
+</span><span>- Simulation results deviation: -3.6611694414769396
+</span><span>- Simulation results deviation: 1.146239115294975
+</span><span>- Simulation results deviation: -2.5398544847667957
+</span><span>- Simulation results deviation: -0.6366327885268142
+</span><span>
+</span><span>Probabilities: [0.27970313941528896, 0.6282451231342908, 0.0520276918043768, 0.0400240456460434]
+</span><span>Prices: [3, 5, 15, 17, 50]
+</span></code></pre>
+<p>The fitness criteria are satisfied.</p>
+<p>Running 10 simulations with this config gives manageable worst-case deviation — <code>~2.29</code>, which is acceptable. Since the results are probabilistic, outliers may still happen — but what matters is that most short simulations remain within a healthy range.</p>
+<p>Final tier structure:</p>
+<ul>
+<li><strong>T1</strong>: $3–$5 → 27.9%</li>
+<li><strong>T2</strong>: $5–$15 → 62.8%</li>
+<li><strong>T3</strong>: $15–$17 → 5.2%</li>
+<li><strong>T4</strong>: $17–$50 → 4.0%</li>
+</ul>
+<p>That’s a solid configuration:</p>
+<ul>
+<li>T1 is a loss</li>
+<li>With T2, you can lose or win</li>
+<li>T3 is a win</li>
+<li>T4 is rare but wide and very rewarding — lots of excitement when it hits</li>
+</ul>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

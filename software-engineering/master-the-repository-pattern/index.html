@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Complete guide to master the repository design pattern, with Typescript examples. Isolate the data persistence from the business logic.">
+    <title> | Master the Repository Pattern</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Master the Repository Pattern</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2023-10-27" class="post-date">
+                    October 27, 2023
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p><a href="https://github.com/antoineprdhmm/master_the_repository_pattern">Find the code in my Github</a></p>
+<h2 id="introduction">Introduction</h2>
+<p>During my time at a start-up that later became a unicorn, I faced a common problem: SQL queries and ORM models were scattered throughout the codebase, leading to a disorganized and difficult-to-maintain system.</p>
+<p>It was then that I discovered the <strong>repository pattern</strong>, which seemed like an ideal solution to our problem.</p>
+<p>I started implementing the pattern at that company, working closely with my team to iterate and refine our usage of the pattern over several months.</p>
+<p>In the end, we developed a solid implementation that effectively improved our system’s maintainability.</p>
+<p>Since then, I’ve continued to apply the repository pattern in other projects and found it to be a valuable tool for keeping codebases clean, organized, and scalable.</p>
+<p>This post is the result of my experience playing around with the pattern over the years with other experienced engineers.</p>
+<p>The examples we’ll use in this post will be based on an e-commerce application, making it easier to relate the concepts to real-world scenarios.</p>
+<h2 id="core-concept">Core Concept</h2>
+<h3 id="domain">Domain</h3>
+<p>A <strong>domain</strong> refers to a specific area of activity or subject matter within a business organization. It encompasses the knowledge, processes, and rules that are specific to that area or subject matter. For instance, if we are developing an application to sell goods online, the domain is e-commerce.</p>
+<p>The e-commerce domain has sub-domains. Here are few of them</p>
+<ul>
+<li><em>Product management</em>: product descriptions, prices, images, and inventory levels.</li>
+<li><em>Payment processing</em>: accepting credit card payments, PayPal, or other payment methods</li>
+<li><em>Shipping and delivery</em>: calculating shipping costs, tracking delivery status, and communicating with shipping carriers</li>
+</ul>
+<h3 id="entities">Entities</h3>
+<p>An <strong>entity</strong> is an object that represents a real-world concept or object in the
+domain.</p>
+<p>In an e-commerce application, an entity might be a <em>Product</em>, a <em>Customer</em>, or an <em>Order</em>.</p>
+<h3 id="aggregates">Aggregates</h3>
+<p>An <strong>aggregate</strong> is a collection of related <strong>entities</strong> that are treated as a single unit. This can be visualized as a tree, where the root is the single entry point.</p>
+<p>For example, in an e-commerce application, <em>orders</em> and <em>line items</em> are both entities that are linked together. An order may have one or many line items, but these line items only make sense in the context of that particular order.</p>
+<p>Therefore, the aggregate in this case is the order.</p>
+<p><img src="/master-the-repository-pattern/relation.png" alt="Relation" /></p>
+<h3 id="consistency-boundaries">Consistency Boundaries</h3>
+<p>An aggregate is the <strong>consistency boundary</strong>, also known as <strong>transactional boundar</strong>y. This means that any changes made to the aggregate must be consistent and atomic, so that the aggregate remains in a valid state at all times.</p>
+<p>In our e-commerce application, an <em>order</em> consists of multiple <em>line items</em>, each with its own amount and quantity.</p>
+<p>If a change is made to one of these line items, it’s important to ensure that the order’s total amount is updated accordingly.</p>
+<h2 id="the-repository-pattern">The Repository Pattern</h2>
+<h3 id="the-importance-of-aggregates">The Importance of Aggregates</h3>
+<p>When data is stored and retrieved from the storage medium without proper structure, it results in mixed and disorganized code that is difficult to name and communicate about.</p>
+<p>Identifying the aggregates of an application is critical</p>
+<ul>
+<li>For avoiding data inconsistencies (consistency boundaries).</li>
+<li>Because it represents the real life things, that are easy to talk about and manipulate. And it keep the code aligned with the domain.</li>
+</ul>
+<p>An order is an order. A customer is a customer.</p>
+<p>But an object with an id, a customer email and an order date represents nothing in the domain.</p>
+<h3 id="keep-domain-and-storage-logics-appart">Keep Domain and Storage Logics Appart</h3>
+<p>Combining domain and storage logics result in a number of issues.</p>
+<h4 id="the-code-is-hard-to-test">The Code is Hard to Test</h4>
+<p>Testing becomes difficult due to the need to mock query building libraries or ORMs. We were using <em>Sequelize</em>, a JavaScript ORM. It was challenging to mock because the output values were not simple plain objects.</p>
+<h4 id="the-storage-representation-of-the-data">The Storage Representation of The Data</h4>
+<p>The storage representation of data can be different, particularly in the case of SQL where an aggregate may be split across several tables.</p>
+<p>For example, an e-commerce application may have an <em>orders</em> table and a <em>line_items</em> table to store each item of an order (as it’s a one to many relationship). This constraint should not appear in the domain logic.</p>
+<h4 id="polluted-domain-logic">Polluted Domain Logic</h4>
+<p>Instead of having a clear logic that simply reflect the domain rules, the domain logic is polluted with the storage logic.</p>
+<p>Moreover, changes made to the storage might affect the domain logic.</p>
+<h3 id="introducing-the-repository-pattern">Introducing the Repository Pattern</h3>
+<p>The previous points underline how important it is to</p>
+<ul>
+<li>Define entities and aggregates that reflect real world entities, and enforce their use.</li>
+<li>Separate the domain and storage logics.</li>
+</ul>
+<p>The repository pattern is the solution.</p>
+<h4 id="a-repository-is-a-component-that-encapsulate-the-storage-logic-of-an-aggregate">A Repository is a Component That Encapsulate the Storage Logic of an Aggregate.</h4>
+<p>The repository acts as a mediator between the domain logic of the application and the data access layer. It provides a set of methods for performing data operations, such as <code>get</code>, <code>upsert</code>, and <code>delete</code>, as well as other specific queries that the application may require.</p>
+<p>By using the repository pattern, the application code is decoupled from the data access layer, which makes it easier to switch to a different data storage system or to make changes to the data access layer without affecting the rest of the application code.</p>
+<p>It also makes it easier to unit test the application code, since the repository can be mocked easily.</p>
+<h4 id="consistency-boundaries-1">Consistency Boundaries</h4>
+<p>The repository implementation must ensure that all operations performed on the aggregate are atomic. In a SQL implementation, this can be achieved using SQL transactions. By wrapping all SQL queries in the same transaction, it’s possible to ensure that if any query fails, all the other queries will be reverted, preventing inconsistencies in the data.</p>
+<h2 id="software-architecture-and-repositories">Software Architecture and Repositories</h2>
+<h3 id="software-architecture-layers">Software Architecture Layers</h3>
+<p>You may be familiar with <strong>clean architecture</strong> or <strong>hexagonal architecture</strong>.</p>
+<p>Regardless of how your project is architectured, you should have at least a separation between the domain and the infrastructure details, as explained before.</p>
+<p>The medium of storage should not affect the domain logic, because the domain logic doesn't know and is not related to a particular medium of storage. Orders can be stored in a file, a relational database, or in RAM: in does not matter, the domain logic remains the same.</p>
+<p>The infrastructure layer is responsible for providing access to the underlying technology, such as databases, message queues, and web services. It acts as a bridge between the domain layer and the underlying technology stack, enabling the domain layer to interact with the underlying resources without being tightly coupled to them.</p>
+<p>To decouple the domain from the infrastructure, the domain will define and expose an interface that describe the persistence needs for a particular aggregate.</p>
+<p>An implementation of this interface can be built for a particular medium of storage (a PostgreSQL database for instance) in the infrastructure layer. This implementation might be injected in the domain. The domain doesn't know which implementation it is (that is PostgreSQL behing), but it does not matter.</p>
+<h2 id="implementing-aggregates">Implementing aggregates</h2>
+<h3 id="entity-services">Entity services</h3>
+<p>In Typescript, two options are available for implementing aggregates</p>
+<ul>
+<li>Object-oriented programming (OOP) using classes.</li>
+<li>Plain objects.</li>
+</ul>
+<p>In either approach, an entity service will be required to apply business logic and call the repository.</p>
+<p>The difference is that with OOP, the domain logic will be encapsulated into the entity class. While with plain objects, the domain logic will be in the entity service.</p>
+<p>In OOP, the domain logic must not be in the entity service, as this goes against OOP principles.
+Instead, the domain logic will be encapsulated in the entity class.</p>
+<p>In the contrary, for plain objects, the business logic must be in the entity service, as plain objects are not capable of encapsulating domain logic: they are just <em>structs</em>.</p>
+<p>Let’s see 2 examples, one using OOP, and another one using plain objects.</p>
+<p>Both examples will use a simplified <em>product</em> entity, with only a <em>name</em> and a <em>price</em>. They focus on updating the product <em>price</em>. The business rule is that the product price must be greater than 0.</p>
+<h3 id="using-plain-objects">Using plain objects</h3>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">interface </span><span>Product {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">name</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">price</span><span>: number;
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">buildProductService </span><span>= (</span><span style="color:#bf616a;">dependencies</span><span>: Dependencies) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">const </span><span>{ </span><span style="color:#bf616a;">productRepository </span><span>} = </span><span style="color:#bf616a;">dependencies</span><span>;
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">updateProductPrice </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">id</span><span>: string, </span><span style="color:#bf616a;">price</span><span>: number): Promise&lt;UpdatePriceResult&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#65737e;">// first, the product is fetched from the repository
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">product </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">productRepository</span><span>.</span><span style="color:#96b5b4;">get</span><span>(</span><span style="color:#bf616a;">id</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#65737e;">// if the product can&#39;t be found, then an explicit business error is returned
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">product</span><span>) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">notUpdated</span><span>&quot;, reason: &quot;</span><span style="color:#a3be8c;">productNotFound</span><span>&quot; };
+</span><span>		}
+</span><span>
+</span><span>		</span><span style="color:#65737e;">//  make sure the price is greater than zero,or return an explicit business error
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">price </span><span>&lt;= </span><span style="color:#d08770;">0</span><span>) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">notUpdated</span><span>&quot;, reason: &quot;</span><span style="color:#a3be8c;">priceLowerOrEqualZero</span><span>&quot; };
+</span><span>		}
+</span><span>		</span><span style="color:#65737e;">// update the price of the entity
+</span><span>		</span><span style="color:#bf616a;">product</span><span>.</span><span style="color:#bf616a;">price </span><span>= </span><span style="color:#bf616a;">price</span><span>;
+</span><span>
+</span><span>		</span><span style="color:#65737e;">// upsert the entity in the repository to persist the new price
+</span><span>		</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">productRepository</span><span>.</span><span style="color:#8fa1b3;">upsert</span><span>(</span><span style="color:#bf616a;">product</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">updated</span><span>&quot; };
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{ </span><span style="color:#bf616a;">updateProductPrice </span><span>};
+</span><span>};
+</span></code></pre>
+<h3 id="using-classes">Using classes</h3>
+<p>The big difference is that price verification and update has been moved inside the Product class.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">class </span><span style="color:#ebcb8b;">Product </span><span style="color:#eff1f5;">{
+</span><span style="color:#eff1f5;">	</span><span style="color:#b48ead;">private </span><span style="color:#bf616a;">id</span><span>: </span><span style="color:#eff1f5;">string;
+</span><span style="color:#eff1f5;">	</span><span style="color:#b48ead;">private </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#eff1f5;">string;
+</span><span style="color:#eff1f5;">	</span><span style="color:#b48ead;">private </span><span style="color:#bf616a;">price</span><span>: </span><span style="color:#eff1f5;">number;
+</span><span style="color:#eff1f5;">
+</span><span style="color:#eff1f5;">	</span><span style="color:#b48ead;">constructor</span><span>(</span><span style="color:#bf616a;">id</span><span>: </span><span style="color:#eff1f5;">string, </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#eff1f5;">string, </span><span style="color:#bf616a;">price</span><span>: </span><span style="color:#eff1f5;">number</span><span>) </span><span style="color:#eff1f5;">{
+</span><span style="color:#eff1f5;">		</span><span style="color:#bf616a;">this</span><span style="color:#eff1f5;">.id </span><span>= </span><span style="color:#bf616a;">id</span><span style="color:#eff1f5;">;
+</span><span style="color:#eff1f5;">		</span><span style="color:#bf616a;">this</span><span style="color:#eff1f5;">.name </span><span>= </span><span style="color:#bf616a;">name</span><span style="color:#eff1f5;">;
+</span><span style="color:#eff1f5;">		</span><span style="color:#bf616a;">this</span><span style="color:#eff1f5;">.</span><span style="color:#bf616a;">price </span><span>= </span><span style="color:#bf616a;">price</span><span style="color:#eff1f5;">;
+</span><span style="color:#eff1f5;">	}
+</span><span style="color:#eff1f5;">
+</span><span style="color:#eff1f5;">	</span><span style="color:#65737e;">// the product entity has a method to set the price
+</span><span style="color:#eff1f5;">	</span><span style="color:#b48ead;">public </span><span style="color:#8fa1b3;">setPrice</span><span>(</span><span style="color:#bf616a;">newPrice</span><span>: </span><span style="color:#eff1f5;">number</span><span>) </span><span style="color:#eff1f5;">{
+</span><span style="color:#eff1f5;">		</span><span style="color:#65737e;">// make sure the price is greater than zero,or return an explicit business error
+</span><span style="color:#eff1f5;">		</span><span style="color:#b48ead;">if </span><span style="color:#eff1f5;">(</span><span style="color:#bf616a;">newPrice </span><span>&lt; </span><span style="color:#d08770;">0</span><span style="color:#eff1f5;">) {
+</span><span style="color:#eff1f5;">			</span><span style="color:#b48ead;">return </span><span style="color:#eff1f5;">{ outcome: </span><span>&quot;</span><span style="color:#a3be8c;">notUpdated</span><span>&quot;</span><span style="color:#eff1f5;">, reason: </span><span>&quot;</span><span style="color:#a3be8c;">priceLowerOrEqualZero</span><span>&quot; </span><span style="color:#eff1f5;">};
+</span><span style="color:#eff1f5;">		}
+</span><span style="color:#eff1f5;">		</span><span style="color:#65737e;">// update the price of the entity
+</span><span style="color:#eff1f5;">		</span><span style="color:#bf616a;">this</span><span style="color:#eff1f5;">.</span><span style="color:#bf616a;">price </span><span>= </span><span style="color:#bf616a;">newPrice</span><span style="color:#eff1f5;">;
+</span><span style="color:#eff1f5;">		</span><span style="color:#b48ead;">return </span><span style="color:#eff1f5;">{ outcome: </span><span>&quot;</span><span style="color:#a3be8c;">updated</span><span>&quot; </span><span style="color:#eff1f5;">};
+</span><span style="color:#eff1f5;">	}
+</span><span style="color:#eff1f5;">}
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">buildProductService </span><span>= (</span><span style="color:#bf616a;">dependencies</span><span>: Dependencies) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">const </span><span>{ </span><span style="color:#bf616a;">productRepository </span><span>} = </span><span style="color:#bf616a;">dependencies</span><span>;
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">updateProductPrice </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">id</span><span>: string, </span><span style="color:#bf616a;">price</span><span>: number): Promise&lt;SetPriceResult&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#65737e;">// first, the product is fetched from the repository
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">product </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">productRepository</span><span>.</span><span style="color:#96b5b4;">get</span><span>(</span><span style="color:#bf616a;">id</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#65737e;">// if the product can&#39;t be found, then an explicit business error is returned
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">product</span><span>) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">notUpdated</span><span>&quot;, reason: &quot;</span><span style="color:#a3be8c;">productNotFound</span><span>&quot; };
+</span><span>		}
+</span><span>
+</span><span>		</span><span style="color:#65737e;">// call the setter
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">updateResult </span><span>= </span><span style="color:#bf616a;">product</span><span>.</span><span style="color:#8fa1b3;">setPrice</span><span>(</span><span style="color:#bf616a;">price</span><span>);
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">updateResult</span><span>.</span><span style="color:#bf616a;">outcome </span><span>=== &quot;</span><span style="color:#a3be8c;">notUpdated</span><span>&quot;) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">updateResult</span><span>;
+</span><span>		}
+</span><span>
+</span><span>		</span><span style="color:#65737e;">// upsert the entity in the repository to persist the new price
+</span><span>		</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">productRepository</span><span>.</span><span style="color:#8fa1b3;">upsert</span><span>(</span><span style="color:#bf616a;">product</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">updated</span><span>&quot; };
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{ </span><span style="color:#bf616a;">updateProductPrice </span><span>};
+</span><span>};
+</span></code></pre>
+<h2 id="complete-typescript-example">Complete Typescript Example</h2>
+<p>Let’s take a look at a complete definition and implementation of an aggregate and its associated repository, using plain objects.</p>
+<p>For the purpose of this example, we will once again use the <em>order</em> aggregate, this time including all of its attributes.</p>
+<h3 id="domain-layer">Domain Layer</h3>
+<p>Starting from the domain is a natural approach, as it forms the foundation of the application.</p>
+<p>It is crucial to build the domain around business constraints rather than technical ones.</p>
+<h4 id="first-define-the-business-entity">First, define the business entity</h4>
+<ul>
+<li>Each <em>order</em> must have a unique identifier.</li>
+<li>An <em>order</em> belongs to a <em>customer</em>.</li>
+<li>The <em>date</em> when the <em>order</em> was placed should be stored.</li>
+<li>An <em>order</em> can be cancelled, subject to certain conditions.</li>
+<li>An <em>order</em> can contain multiple <em>items</em>:
+<ul>
+<li>Each <em>item</em> corresponds to a <em>product</em> in the <em>catalog</em>.</li>
+<li>The <em>price</em> of the <em>item</em> should be stored, even if the <em>product</em> has a <em>price</em> because the <em>product price</em> may change over time.</li>
+<li>The same <em>product</em> can be ordered multiple times within the same <em>order</em>.</li>
+</ul>
+</li>
+<li>The <em>total amount</em> of the <em>order</em> should be calculated as the sum of all the <em>items</em> in the <em>order</em>.</li>
+</ul>
+<p>Here is one way to define the aggregate</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">export type </span><span>LineItem = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">productId</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">quantity</span><span>: number;
+</span><span>	</span><span style="color:#bf616a;">price</span><span>: number;
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">export type </span><span>Order = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">customerId</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">orderDate</span><span>: Date;
+</span><span>	</span><span style="color:#bf616a;">totalAmount</span><span>: number;
+</span><span>	</span><span style="color:#bf616a;">lineItems</span><span>: LineItem[];
+</span><span>	</span><span style="color:#bf616a;">cancellationDate</span><span>?: Date;
+</span><span>};
+</span></code></pre>
+<h4 id="define-persistence-needs-for-this-aggregate">Define persistence needs for this aggregate</h4>
+<p>Given the defined order aggregate, here are the persistence needs</p>
+<ul>
+<li>The <em>order</em>’s unique identifier will be referenced in various places (such as <em>shipping</em>), so it must be possible to retrieve an <em>order</em> by its <em>ID</em>.</li>
+<li>Retrieve all <em>orders</em> associated with a specific <em>customer</em>.</li>
+<li>It’s possible for an <em>order</em> to be updated in some cases (such as when it’s cancelled).</li>
+</ul>
+<p>Here is a possible interface for this repository.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">interface </span><span>Orders {
+</span><span>	</span><span style="color:#8fa1b3;">getById</span><span>: (</span><span style="color:#bf616a;">id</span><span>: string) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;Order | undefined&gt;;
+</span><span>	</span><span style="color:#8fa1b3;">getByCustomerId</span><span>: (</span><span style="color:#bf616a;">customerId</span><span>: string) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;Order[]&gt;;
+</span><span>	</span><span style="color:#8fa1b3;">upsert</span><span>: (</span><span style="color:#bf616a;">order</span><span>: Order) </span><span style="color:#b48ead;">=&gt; </span><span>Promise&lt;void&gt;;
+</span><span>}
+</span></code></pre>
+<h4 id="infrastructure-layer">Infrastructure Layer</h4>
+<p>Now that everything is defined, let’s write a PostgreSQL implementation for this repository.</p>
+<pre data-lang="sql" style="background-color:#2b303b;color:#c0c5ce;" class="language-sql "><code class="language-sql" data-lang="sql"><span style="color:#b48ead;">CREATE TABLE </span><span style="color:#8fa1b3;">orders</span><span> (
+</span><span>  id uuid </span><span style="color:#b48ead;">PRIMARY KEY</span><span>,
+</span><span>  customer_id </span><span style="color:#b48ead;">int </span><span>NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  order_date </span><span style="color:#b48ead;">timestamp </span><span>NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  cancellation_date </span><span style="color:#b48ead;">timestamp </span><span>NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  total_amount </span><span style="color:#b48ead;">numeric</span><span>(</span><span style="color:#d08770;">10</span><span>,</span><span style="color:#d08770;">2</span><span>) NOT </span><span style="color:#d08770;">NULL
+</span><span>  </span><span style="color:#65737e;">-- FOREIGN KEY (customer_id) REFERENCES customers (id)
+</span><span>);
+</span><span>
+</span><span style="color:#b48ead;">CREATE TABLE </span><span style="color:#8fa1b3;">line_items</span><span> (
+</span><span>  id uuid </span><span style="color:#b48ead;">PRIMARY KEY</span><span>,
+</span><span>  order_id uuid NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  product_id </span><span style="color:#b48ead;">int </span><span>NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  quantity </span><span style="color:#b48ead;">int </span><span>NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  price </span><span style="color:#b48ead;">numeric</span><span>(</span><span style="color:#d08770;">10</span><span>,</span><span style="color:#d08770;">2</span><span>) NOT </span><span style="color:#d08770;">NULL</span><span>,
+</span><span>  </span><span style="color:#b48ead;">FOREIGN KEY</span><span> (order_id) </span><span style="color:#b48ead;">REFERENCES</span><span> orders (id)
+</span><span>  </span><span style="color:#65737e;">-- FOREIGN KEY (product_id) REFERENCES products (id)
+</span><span>);
+</span></code></pre>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">Knex </span><span>} </span><span style="color:#b48ead;">from </span><span>&quot;</span><span style="color:#a3be8c;">knex</span><span>&quot;;
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">Order</span><span>, </span><span style="color:#bf616a;">LineItem</span><span>, </span><span style="color:#bf616a;">Orders </span><span>} </span><span style="color:#b48ead;">from </span><span>&quot;</span><span style="color:#a3be8c;">../../../domain/order</span><span>&quot;;
+</span><span>
+</span><span style="color:#b48ead;">interface </span><span>PostgresqlOrderRepositoryDependencies {
+</span><span>	</span><span style="color:#bf616a;">db</span><span>: Knex;
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">type </span><span>OrderRow = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">customer_id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">order_date</span><span>: Date;
+</span><span>	</span><span style="color:#bf616a;">cancellation_date</span><span>?: Date;
+</span><span>	</span><span style="color:#bf616a;">total_amount</span><span>: number;
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">type </span><span>LineItemRow = {
+</span><span>	</span><span style="color:#bf616a;">id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">order_id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">product_id</span><span>: string;
+</span><span>	</span><span style="color:#bf616a;">quantity</span><span>: number;
+</span><span>	</span><span style="color:#bf616a;">price</span><span>: number;
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">transformOrderRowToOrder </span><span>= (</span><span style="color:#bf616a;">orderRow</span><span>: OrderRow, </span><span style="color:#bf616a;">lineItemRows</span><span>: LineItemRow[]): Order </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{
+</span><span>		id: </span><span style="color:#bf616a;">orderRow</span><span>.id,
+</span><span>		customerId: </span><span style="color:#bf616a;">orderRow</span><span>.</span><span style="color:#bf616a;">customer_id</span><span>,
+</span><span>		orderDate: </span><span style="color:#bf616a;">orderRow</span><span>.</span><span style="color:#bf616a;">order_date</span><span>,
+</span><span>		cancellationDate: </span><span style="color:#bf616a;">orderRow</span><span>.</span><span style="color:#bf616a;">cancellation_date</span><span>,
+</span><span>		totalAmount: </span><span style="color:#bf616a;">orderRow</span><span>.</span><span style="color:#bf616a;">total_amount</span><span>,
+</span><span>		lineItems: </span><span style="color:#bf616a;">lineItemRows</span><span>.</span><span style="color:#8fa1b3;">map</span><span>((</span><span style="color:#bf616a;">lineItem</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>({
+</span><span>			id: </span><span style="color:#bf616a;">lineItem</span><span>.id,
+</span><span>			productId: </span><span style="color:#bf616a;">lineItem</span><span>.</span><span style="color:#bf616a;">product_id</span><span>,
+</span><span>			quantity: </span><span style="color:#bf616a;">lineItem</span><span>.</span><span style="color:#bf616a;">quantity</span><span>,
+</span><span>			price: </span><span style="color:#bf616a;">lineItem</span><span>.</span><span style="color:#bf616a;">price</span><span>,
+</span><span>		})),
+</span><span>	};
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">transformOrderToOrderRow </span><span>= (</span><span style="color:#bf616a;">order</span><span>: Order): OrderRow </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{
+</span><span>		id: </span><span style="color:#bf616a;">order</span><span>.id,
+</span><span>		customer_id: </span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">customerId</span><span>,
+</span><span>		order_date: </span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">orderDate</span><span>,
+</span><span>		cancellation_date: </span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">cancellationDate</span><span>,
+</span><span>		total_amount: </span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">totalAmount</span><span>,
+</span><span>	};
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">transformLineItemsToLineItemRows </span><span>= (
+</span><span>	</span><span style="color:#bf616a;">orderId</span><span>: string,
+</span><span>	</span><span style="color:#bf616a;">lineItems</span><span>: LineItem[],
+</span><span>): LineItemRow[] </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">lineItems</span><span>.</span><span style="color:#8fa1b3;">map</span><span>((</span><span style="color:#bf616a;">lineItem</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">return </span><span>{
+</span><span>			id: </span><span style="color:#bf616a;">lineItem</span><span>.id,
+</span><span>			order_id: </span><span style="color:#bf616a;">orderId</span><span>,
+</span><span>			product_id: </span><span style="color:#bf616a;">lineItem</span><span>.</span><span style="color:#bf616a;">productId</span><span>,
+</span><span>			quantity: </span><span style="color:#bf616a;">lineItem</span><span>.</span><span style="color:#bf616a;">quantity</span><span>,
+</span><span>			price: </span><span style="color:#bf616a;">lineItem</span><span>.</span><span style="color:#bf616a;">price</span><span>,
+</span><span>		};
+</span><span>	});
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">export const </span><span style="color:#8fa1b3;">buildPostgresqlOrderRepository </span><span>= (
+</span><span>	</span><span style="color:#bf616a;">dependencies</span><span>: PostgresqlOrderRepositoryDependencies,
+</span><span>): Orders </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">const </span><span>{ </span><span style="color:#bf616a;">db </span><span>} = </span><span style="color:#bf616a;">dependencies</span><span>;
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">getById </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">id</span><span>: string): Promise&lt;Order | undefined&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">orderRows </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">db</span><span>.</span><span style="color:#96b5b4;">select</span><span>(&quot;</span><span style="color:#a3be8c;">*</span><span>&quot;).</span><span style="color:#8fa1b3;">from</span><span>&lt;OrderRow&gt;(&quot;</span><span style="color:#a3be8c;">orders</span><span>&quot;).</span><span style="color:#8fa1b3;">where</span><span>(&quot;</span><span style="color:#a3be8c;">id</span><span>&quot;, </span><span style="color:#bf616a;">id</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">orderRows</span><span>.length === </span><span style="color:#d08770;">0</span><span>) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span style="color:#d08770;">undefined</span><span>;
+</span><span>		}
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">lineItemRows </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">db</span><span>.</span><span style="color:#96b5b4;">select</span><span>(&quot;</span><span style="color:#a3be8c;">*</span><span>&quot;).</span><span style="color:#8fa1b3;">from</span><span>&lt;LineItemRow&gt;(&quot;</span><span style="color:#a3be8c;">line_items</span><span>&quot;).</span><span style="color:#8fa1b3;">where</span><span>(&quot;</span><span style="color:#a3be8c;">order_id</span><span>&quot;, </span><span style="color:#bf616a;">id</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">return </span><span style="color:#8fa1b3;">transformOrderRowToOrder</span><span>(</span><span style="color:#bf616a;">orderRows</span><span>[</span><span style="color:#d08770;">0</span><span>], </span><span style="color:#bf616a;">lineItemRows</span><span>);
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">getByCustomerId </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">customerId</span><span>: string): Promise&lt;Order[]&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">orders </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">db</span><span>.</span><span style="color:#96b5b4;">select</span><span>(&quot;</span><span style="color:#a3be8c;">*</span><span>&quot;).</span><span style="color:#8fa1b3;">from</span><span>&lt;OrderRow&gt;(&quot;</span><span style="color:#a3be8c;">orders</span><span>&quot;).</span><span style="color:#8fa1b3;">where</span><span>(&quot;</span><span style="color:#a3be8c;">customer_id</span><span>&quot;, </span><span style="color:#bf616a;">customerId</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">ordersItems </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">db
+</span><span>			.</span><span style="color:#96b5b4;">select</span><span>(&quot;</span><span style="color:#a3be8c;">*</span><span>&quot;)
+</span><span>			.</span><span style="color:#8fa1b3;">from</span><span>&lt;LineItemRow&gt;(&quot;</span><span style="color:#a3be8c;">line_items</span><span>&quot;)
+</span><span>			.</span><span style="color:#8fa1b3;">where</span><span>(
+</span><span>				&quot;</span><span style="color:#a3be8c;">order_id</span><span>&quot;,
+</span><span>				</span><span style="color:#bf616a;">orders</span><span>.</span><span style="color:#8fa1b3;">map</span><span>((</span><span style="color:#bf616a;">order</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">order</span><span>.id),
+</span><span>			);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">orders</span><span>.</span><span style="color:#8fa1b3;">map</span><span>((</span><span style="color:#bf616a;">order</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span><span>			</span><span style="color:#8fa1b3;">transformOrderRowToOrder</span><span>(
+</span><span>				</span><span style="color:#bf616a;">order</span><span>,
+</span><span>				</span><span style="color:#bf616a;">ordersItems</span><span>.</span><span style="color:#8fa1b3;">filter</span><span>((</span><span style="color:#bf616a;">item</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">item</span><span>.</span><span style="color:#bf616a;">order_id </span><span>=== </span><span style="color:#bf616a;">order</span><span>.id),
+</span><span>			),
+</span><span>		);
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">upsert </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">order</span><span>: Order): Promise&lt;void&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">db</span><span>.</span><span style="color:#8fa1b3;">transaction</span><span>(</span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">trx</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>			</span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">trx</span><span>(&quot;</span><span style="color:#a3be8c;">orders</span><span>&quot;).</span><span style="color:#8fa1b3;">upsert</span><span>([</span><span style="color:#8fa1b3;">transformOrderToOrderRow</span><span>(</span><span style="color:#bf616a;">order</span><span>)]);
+</span><span>
+</span><span>			</span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">trx</span><span>(&quot;</span><span style="color:#a3be8c;">line_items</span><span>&quot;).</span><span style="color:#8fa1b3;">upsert</span><span>(</span><span style="color:#8fa1b3;">transformLineItemsToLineItemRows</span><span>(</span><span style="color:#bf616a;">order</span><span>.id, </span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">lineItems</span><span>));
+</span><span>		});
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{ </span><span style="color:#bf616a;">getById</span><span>, </span><span style="color:#bf616a;">getByCustomerId</span><span>, </span><span style="color:#bf616a;">upsert </span><span>};
+</span><span>};
+</span></code></pre>
+<p>Note that the interface is called <code>Orders</code> and not <code>OrderRepository</code>. The reason is a DDD reason: in the domain, "repository" means nothing. We would say "retrieve the order 1 from the orders", not "retrieve the order 1 from the order repository".</p>
+<h2 id="a-few-best-practices-to-finish-strong">A Few Best Practices to Finish Strong</h2>
+<h3 id="naming">Naming</h3>
+<h4 id="the-repository">The Repository</h4>
+<p>The repository interface name should be the name of the aggregate, in plural. For instance, the repository interface for the Order aggregate is called <code>Orders</code>. Because it represents all the orders.</p>
+<p>The name of the repository implementation must contains the storage medium specifications.</p>
+<p>The function responsible for building a PostgreSQL implementation of the repository <code>Orders</code> can be named <code>buildPostgresqlOrderRepository</code>.</p>
+<h4 id="the-methods">The Methods</h4>
+<p>A repository must be seen as a collection of data, similar to a <code>Set</code>.</p>
+<p>In such a collection, there is no <code>create</code> method, since the creation of an entity is handled by the business logic. The repository's role is to receive the entity from the business logic and persist it.</p>
+<p>Similarly, <code>cancel</code> is not a valid method neither. The <code>cancelOrder</code> method could be part of the <code>orderService</code> as it's the business logic that actually modifies the order to effect the cancellation. The repository's responsibility is simply to receive the order and persist its updated version.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">export const </span><span style="color:#8fa1b3;">buildOrderService </span><span>= (</span><span style="color:#bf616a;">dependencies</span><span>: OrderServiceDependencies): OrderService </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">const </span><span>{ </span><span style="color:#bf616a;">orderRepository </span><span>} = </span><span style="color:#bf616a;">dependencies</span><span>;
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// ...
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// cancel order is part of the order service
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">cancelOrder </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">id</span><span>: string): Promise&lt;CancelOrderResult&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">order </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">orderRepository</span><span>.</span><span style="color:#8fa1b3;">getById</span><span>(</span><span style="color:#bf616a;">id</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">order</span><span>) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">notCancelled</span><span>&quot;, reason: &quot;</span><span style="color:#a3be8c;">orderNotFound</span><span>&quot; };
+</span><span>		}
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">cancellationDate</span><span>) {
+</span><span>			</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">notCancelled</span><span>&quot;, reason: &quot;</span><span style="color:#a3be8c;">alreadyCancelled</span><span>&quot; };
+</span><span>		}
+</span><span>		</span><span style="color:#65737e;">// the cancellation is done by setting the cancelledAt date to the current date
+</span><span>		</span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">cancellationDate </span><span>= new Date();
+</span><span>
+</span><span>		</span><span style="color:#65737e;">// then, the repository upsert method is called to persits the change
+</span><span>		</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">orderRepository</span><span>.</span><span style="color:#8fa1b3;">upsert</span><span>(</span><span style="color:#bf616a;">order</span><span>);
+</span><span>
+</span><span>		</span><span style="color:#b48ead;">return </span><span>{ outcome: &quot;</span><span style="color:#a3be8c;">cancelled</span><span>&quot; };
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#65737e;">// ...
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{
+</span><span>		</span><span style="color:#bf616a;">cancelOrder</span><span>,
+</span><span>		</span><span style="color:#65737e;">// ...
+</span><span>	};
+</span><span>};
+</span></code></pre>
+<h3 id="ids-and-timestamps">Ids and Timestamps</h3>
+<p>In a SQL database, it’s possible to generate values for certain fields when defining the schema of a table.</p>
+<p>For instance, <code>ID SERIAL PRIMARY KEY</code> (or <code>AUTO INCREMENT</code>) will generate an <code>ID</code> for newly inserted rows. In most ORMs, timestamps like created at are automatically added to each row using things like <code>DEFAULT CURRENT TIMESTAMP</code>.</p>
+<p>However, when working with the order aggregate, it’s important not to generate values for the <em>id</em> and <em>order date</em> fields in the storage medium.</p>
+<ul>
+<li>
+<p>These fields are business values. The <em>id</em> is used to uniquely identify the entity in the business logic, while the <em>order date</em> represents the date on which the <em>order</em> was created in the business logic, not the date at which the row was inserted in the storage medium.</p>
+</li>
+<li>
+<p>The repository handle the persistence of the aggregate <em>order</em>, which includes the <em>id</em> and <em>order date</em> fields. So it must be set by the business logic</p>
+</li>
+<li>
+<p>In theory, there can be multiple implementations of a repository interface. These implementation are distinct, so there is no way to ensure there is no <code>ID</code> conflict between the 2 repository.</p>
+</li>
+</ul>
+<p>Imagine if both repository implementation start the <em>id</em> value at 1 and increment the <em>id</em> counter after each insert. The same id will match different entities stored in 2 distinct repositories.</p>
+<p>Here is the rule:</p>
+<ul>
+<li>If the value is a business value, it must be set in domain layer</li>
+<li>If the value is only used in the storage, it must be generated in the storage medium</li>
+</ul>
+<h3 id="partial-read-partial-write-and-performance">Partial Read, Partial Write, and Performance</h3>
+<p>To cancel an <em>order</em>, the only attribute to update is the <em>cancellation date</em>.</p>
+<p>Similarly, there may be cases where only certain attributes of an <em>order</em> are needed, such as the <em>order dates</em> for a <em>customer</em>.</p>
+<p>In these situations: should there be methods that return or update only the relevant attributes ?</p>
+<p>As already mentioned, a repository must be seen as a collection of objects, like a <code>Set</code> or a <code>Map</code>.</p>
+<p>In such collections, the full object is fetched or set, not just a part of it. The same holds true for repositories.</p>
+<p>Furthermore, an <code>Order</code> is an <code>Order</code>. A subpart of an <code>Order</code> is not an <code>Order</code>, and it can be difficult to name because it doesn’t represent anything meaningful in the domain.</p>
+<p>Most of the time, the reason people want to do partial updates or partial gets is for performance reasons. <strong>Few extra attributes will not significantly impact the performance an application. And in most cases, code readability is more important than performance.</strong></p>
+<p>If there is actually a performance problem with a repository, the first step would be to assert that the aggregates and business logic are well defined.</p>
+<p>Otherwise, the CQRS pattern can be beneficial in cases where there are performance issues, as it aims to separate the reading and writing responsibilities in a system.</p>
+<p>By separating these concerns, a write model can handle commands and modify the state of the aggregate with well-defined business logic, while the read model can be optimized for queries and return denormalized data that is tailored to the client’s needs.</p>
+<p>By doing so, this approach can result in significant performance improvements.</p>
+<h3 id="concurrent-update">Concurrent Update</h3>
+<p>Suppose that two upserts are made at the same time on the same order.</p>
+<ul>
+<li>A fetches the <em>order</em></li>
+<li>B fetches the <em>order</em></li>
+<li>A changes the <em>cancellation date</em>, and calls the <code>upsert</code> method</li>
+<li>B changes the <em>total amount</em>, and calls the <code>upsert</code> method.</li>
+</ul>
+<p>Although no errors occur, the <em>cancellation date</em> ends up being set back to <code>null</code>. How can this be prevented from happening?</p>
+<p>One solution to this problem is to use <strong>version numbers</strong>, though it may not be the best approach for every situation</p>
+<p>Each entity in the system would be assigned a <em>version number</em>, which is incremented by one every time an update is made to the entity.</p>
+<p>When the update method is called on the repository to persist the new version of the entity, the update should be performed based on both the entity’s ID and version number (rather than ID only). Since the version number has been incremented, the entity to be updated should be the one with the previous version (i.e. version number minus one). If no match is found, it means that at
+least one update has been made to the entity in the meantime, and the repository should return an error.</p>
+<p>At this point, the business logic must determine how to handle the situation - automatic retry or returning an error are two possible options.</p>
+<h3 id="testing-the-business-logic">Testing the Business Logic</h3>
+<h4 id="in-memory-repository-implementation">In Memory Repository Implementation</h4>
+<p>Setting up a database for testing can be complicated, slow, and unnecessary when the purpose is to test the business logic. Instead of injecting an instance of a PostgreSQL implementation, it is possible to inject an instance of an in-memory implementation, which is much simpler and faster.</p>
+<p>The in-memory implementation can be created using a <code>Set</code> or a <code>Map</code>, and does not require any additional setup.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#65737e;">// still an OrderRepository, but using a Map instead of a PostgreSQL database as storage medium
+</span><span>
+</span><span style="color:#b48ead;">export const </span><span style="color:#8fa1b3;">buildInMemoryOrderRepository </span><span>= (): OrderRepository </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#65737e;">// use a Map to store the orders by id
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">ordersById </span><span>= new Map&lt;string, Order&gt;();
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">getById </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">id</span><span>: string): Promise&lt;Order | undefined&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">order </span><span>= </span><span style="color:#bf616a;">ordersById</span><span>.</span><span style="color:#96b5b4;">get</span><span>(</span><span style="color:#bf616a;">id</span><span>);
+</span><span>		</span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">order</span><span>;
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">getByCustomerId </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">customerId</span><span>: string): Promise&lt;Order[]&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">orders </span><span>= </span><span style="color:#ebcb8b;">Array</span><span>.</span><span style="color:#8fa1b3;">from</span><span>(</span><span style="color:#bf616a;">ordersById</span><span>.</span><span style="color:#96b5b4;">values</span><span>());
+</span><span>		</span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">orders</span><span>.</span><span style="color:#8fa1b3;">filter</span><span>((</span><span style="color:#bf616a;">order</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">order</span><span>.</span><span style="color:#bf616a;">customerId </span><span>=== </span><span style="color:#bf616a;">customerId</span><span>);
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">upsert </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">order</span><span>: Order): Promise&lt;void&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#bf616a;">ordersById</span><span>.</span><span style="color:#96b5b4;">set</span><span>(</span><span style="color:#bf616a;">order</span><span>.id, </span><span style="color:#bf616a;">order</span><span>);
+</span><span>	};
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">return </span><span>{ </span><span style="color:#bf616a;">getById</span><span>, </span><span style="color:#bf616a;">getByCustomerId</span><span>, </span><span style="color:#bf616a;">upsert </span><span>};
+</span><span>};
+</span></code></pre>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">buildOrderService</span><span>, </span><span style="color:#bf616a;">Order </span><span>} </span><span style="color:#b48ead;">from </span><span>&quot;</span><span style="color:#a3be8c;">../index</span><span>&quot;;
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">buildInMemoryOrderRepository </span><span>} </span><span style="color:#b48ead;">from </span><span>&quot;</span><span style="color:#a3be8c;">../../../infrastructure/repositories/order/inMemory</span><span>&quot;;
+</span><span>
+</span><span style="color:#65737e;">// example of a unit test, testing the order service method cancelOrder, and using the in memory repository
+</span><span>
+</span><span style="color:#8fa1b3;">describe</span><span>(&quot;</span><span style="color:#a3be8c;">cancelOrder</span><span>&quot;, () </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">orderRepository </span><span>= </span><span style="color:#8fa1b3;">buildInMemoryOrderRepository</span><span>();
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">orderService </span><span>= </span><span style="color:#8fa1b3;">buildOrderService</span><span>({ </span><span style="color:#bf616a;">orderRepository </span><span>});
+</span><span>
+</span><span>	</span><span style="color:#8fa1b3;">describe</span><span>(&quot;</span><span style="color:#a3be8c;">given the id of an existing order</span><span>&quot;, () </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>		</span><span style="color:#8fa1b3;">describe</span><span>(&quot;</span><span style="color:#a3be8c;">given the order is already cancelled</span><span>&quot;, </span><span style="color:#b48ead;">async </span><span>() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>			</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">id </span><span>= &quot;</span><span style="color:#a3be8c;">order1</span><span>&quot;;
+</span><span>			</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">order</span><span>: Order = {
+</span><span>				</span><span style="color:#bf616a;">id</span><span>,
+</span><span>				customerId: &quot;</span><span style="color:#a3be8c;">customerId</span><span>&quot;,
+</span><span>				orderDate: new Date(),
+</span><span>				cancellationDate: new Date(),
+</span><span>				totalAmount: </span><span style="color:#d08770;">100</span><span>,
+</span><span>				lineItems: [
+</span><span>					{
+</span><span>						id: &quot;</span><span style="color:#a3be8c;">lineItem1</span><span>&quot;,
+</span><span>						productId: &quot;</span><span style="color:#a3be8c;">product1</span><span>&quot;,
+</span><span>						price: </span><span style="color:#d08770;">50</span><span>,
+</span><span>						quantity: </span><span style="color:#d08770;">2</span><span>,
+</span><span>					},
+</span><span>				],
+</span><span>			};
+</span><span>
+</span><span>			</span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">orderRepository</span><span>.</span><span style="color:#8fa1b3;">upsert</span><span>(</span><span style="color:#bf616a;">order</span><span>);
+</span><span>
+</span><span>			</span><span style="color:#8fa1b3;">it</span><span>(&quot;</span><span style="color:#a3be8c;">returns an error because the order is already cancelled</span><span>&quot;, </span><span style="color:#b48ead;">async </span><span>() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>				</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">result </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">orderService</span><span>.</span><span style="color:#8fa1b3;">cancelOrder</span><span>(</span><span style="color:#bf616a;">id</span><span>);
+</span><span>
+</span><span>				</span><span style="color:#8fa1b3;">expect</span><span>(</span><span style="color:#bf616a;">result</span><span>).</span><span style="color:#8fa1b3;">toEqual</span><span>({
+</span><span>					outcome: &quot;</span><span style="color:#a3be8c;">notCancelled</span><span>&quot;,
+</span><span>					reason: &quot;</span><span style="color:#a3be8c;">alreadyCancelled</span><span>&quot;,
+</span><span>				});
+</span><span>			});
+</span><span>		});
+</span><span>		</span><span style="color:#65737e;">// other tests ...
+</span><span>	});
+</span><span>	</span><span style="color:#65737e;">// other tests  ...
+</span><span>});
+</span></code></pre>
+<h4 id="isolate-the-business-logic">Isolate the Business Logic</h4>
+<p>The in-memory repository is unnecessary because it does not add value to the test - it is only present because a repository must be injected. The focus of the test should be on the business logic, not the repository. In addition, a poorly implemented in-memory repository may affect the test results, and writing tests to evaluate a repository implementation that is solely used for testing purposes can be excessive.</p>
+<p>To test the system effectively, it is best to isolate the business logic and test it independently. If the aggregates are implemented as classes, testing the class methods may be sufficient, since the business logic is contained within the class. On the other hand, if the business logic is primarily located in the entity service, it may be useful to extract that logic into functions that are not exposed outside of the service, but only used for testing purposes.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The repository pattern is a powerful tool for software engineers seeking to create maintainable, scalable, and organized codebases. Its ability to separate concerns and decouple domain logic from underlying data storage implementations makes it a powerful technique that enforces aggregate usage, prevents the contamination of business logic with storage logic, and makes testing easier.</p>
+<p>Throughout this post, we have explored essential concepts and best practices for implementing the repository pattern in TypeScript, using a real-world e-commerce application as our example. From defining the repository interface and aggregates to implementing concrete repositories, we have covered a wide range of topics that will aid in mastering the repository pattern.</p>
+<p>Whether you are a seasoned developer or just beginning, I hope this post has given you a solid foundation for building better software using the repository pattern.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

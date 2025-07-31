@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Mnemonic seeds are a way to represent a private key in a form that is easier for humans to remember.">
+    <title> | Mnemonic Seeds</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">Mnemonic Seeds</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2022-12-18" class="post-date">
+                    December 18, 2022
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>A blockchain account is just a <strong>private key</strong>, from which
+<strong>public keys</strong> (addresses) are derived.</p>
+<p>Suppose we are the owner of an account, and a NFT is owned by one
+public address of this account. Then we are the owner of this NFT.</p>
+<p>As we say, <strong>not your key, not your coins</strong>. So we better not
+forgot our private key. Else, we’ll loose everything we own !</p>
+<p>This is why <strong>mnemonic seeds</strong> are useful.</p>
+<h2 id="mnemonic-seed">Mnemonic Seed</h2>
+<p>A mnemonic seed is a way of representing a large, randomly generated
+number as a sequence of words.</p>
+<p>This sequence is usually 12, 15, 18, 21 or 24 words long. The words
+are chosen from a predefined list, and the specific word chosen at
+each position in the sequence is determined by the value of the
+private key at that position.</p>
+<p>To compute the mnemonic seed</p>
+<ul>
+<li>The private key is first converted into a binary representation</li>
+<li>The binary representation is then divided into groups of 11 bits</li>
+<li>Each group is used to index into the list of 2048 words to select
+a specific word</li>
+<li>The selected words are then concatenated to form the mnemonic
+seed.</li>
+</ul>
+<p>See BIP-39 for more infos about mnemonic standard.</p>
+<p>Here is the official english word list <a href="https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt">https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt</a></p>
+<h2 id="concrete-example">Concrete Example</h2>
+<p>Say the private key is <strong>0x4B6150645367566B5970337336763979</strong></p>
+<p>The binary representation of this private key is</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>01001011011 00001010100 00011001000 10100110110 01110101011
+</span><span>00110101101 01100101110 00000110011 01110011001 10110011101
+</span><span>10001110010 1111001
+</span></code></pre>
+<p>The list contains 2048 words. Each word is encoded on 11 bits. The
+private key is encoded on 128 bits. 128/11 is not even, so we can’t
+represent the private key like this into words.</p>
+<p>We need to add 4 more bits, because 132/11 is even (12). These 4 bits
+are the 4 leftmost bits of the SHA 256 checksum of the private key.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>SHA256(4B6150645367566B5970337336763979) = 81339e3d40865082004a0eccf5aba7d15a05d5d99a74547be4718b78f6da1617
+</span></code></pre>
+<p>1 digit in hexa is 4 digits in binary. The leftmost hexa char is 8,
+which is 1000 in binary</p>
+<p>The 132 bits are</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>01001011011 00001010100 00011001000 10100110110 01110101011
+</span><span>00110101101 01100101110 00000110011 01110011001 10110011101
+</span><span>10001110010 11110011000
+</span></code></pre>
+<p>In decimal it's</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>603, 84, 200, 1334, 939, 429, 814, 51, 921, 1437, 1138, 1944
+</span></code></pre>
+<p>The indexes for the 2048 words are 0 to 2047. So 603 means we look for
+the 604th word in the list, which is <strong>enter</strong>.</p>
+<p>Repeat for each, and we get the mnemonic seed !</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>enter appear boil plug install cup grape all industry recipe mixture vessel
+</span></code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>Private keys are long strings of random characters that are difficult
+to remember, read, and write for humans. It’s easy to make a mistake
+by copying the private key, and therefore, loose access the your
+account.</p>
+<p>Mnemonic seeds are a way to represent a private key in a form that is
+easier for humans to remember, because it’s made up of words.</p>
+<p>With a deterministic wallet, the original seed is enough to recover
+all private and public keys. A few words sequence is the only thing to
+remember.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

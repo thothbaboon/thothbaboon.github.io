@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+Allow: /
+Sitemap: https://antoineprdhmm.github.io/sitemap.xml

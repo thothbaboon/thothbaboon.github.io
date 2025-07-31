@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Learn about the best approach to handling errors in TypeScript. Discover the Outcome Pattern and Switch Guard.">
+    <title> | The Only Way to Manage Errors in Typescript</title>
+    
+    <link rel="stylesheet" href="https://antoineprdhmm.github.io/style.css?h=0b13e1dc1cf44b248c9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    
+        
+    
+</head>
+<body>
+    
+<header>
+    <div class="header-content">
+        <h1><a href="https:&#x2F;&#x2F;antoineprdhmm.github.io"></a></h1>
+        <nav class="header-links">
+            <a href="https:&#x2F;&#x2F;antoineprdhmm.github.io" class="home-link">&larr; Home</a>
+        </nav>
+    </div>
+</header>
+
+    
+    
+<main>
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">The Only Way to Manage Errors in Typescript</h1>
+            
+            
+            <div class="post-meta">
+                
+                <time datetime="2023-02-14" class="post-date">
+                    February 14, 2023
+                </time>
+                
+
+                
+                
+                
+
+                
+            </div>
+            
+        </header>
+        
+        <div class="post-content">
+            <p>What's wrong with this code ?</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#b48ead;">try </span><span>{
+</span><span>  </span><span style="color:#65737e;">// do something
+</span><span>} </span><span style="color:#b48ead;">catch </span><span>(</span><span style="color:#bf616a;">error</span><span>) {
+</span><span>  </span><span style="color:#65737e;">// handle error here
+</span><span>}
+</span></code></pre>
+<p>The problem with this code is that in TypeScript, the caught error is
+not typed, and although it can be cast, it is not a safe practice
+since anything can be thrown, not only an error.</p>
+<p><code>throw(1)</code> works for instance</p>
+<ul>
+<li>When we throw errors, it becomes difficult to determine what we are catching since <code>error</code> can be anything.</li>
+<li>Additionally, it becomes challenging to identify which errors we need to handle, unless we search through all the function calls, which can be time-consuming and complex.</li>
+<li>If a new error is added and not handled, the code will still compile. It should not.</li>
+</ul>
+<p>It is important to distinguish between unexpected errors, which should
+be thrown, and expected errors, such as business errors, which should
+not be thrown.</p>
+<p>There are better ways to handle expected errors, which we will
+explore.</p>
+<h2 id="the-outcome-pattern">The Outcome Pattern</h2>
+<p>We are writing a method to allow users to purchase items in an
+e-commerce application. The method verifies that the item being
+purchased exists and is also available for purchase. There are four
+potential outcomes:</p>
+<ul>
+<li>The item is not ordered because this ID does not match an item</li>
+<li>The item is not ordered because it is out of stock.</li>
+<li>The item is not ordered because the selected color does not exist.</li>
+<li>The item is successfully ordered.</li>
+</ul>
+<p>Thus, the method's result can be expressed as a union of these 4
+possible outcomes.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">type </span><span>OrderItemResult =
+</span><span>  | {
+</span><span>      </span><span style="color:#bf616a;">outcome</span><span>: &quot;</span><span style="color:#a3be8c;">notOrdered</span><span>&quot;;
+</span><span>      </span><span style="color:#bf616a;">reason</span><span>: &quot;</span><span style="color:#a3be8c;">itemNotFound</span><span>&quot;;
+</span><span>    }
+</span><span>  | {
+</span><span>      </span><span style="color:#bf616a;">outcome</span><span>: &quot;</span><span style="color:#a3be8c;">notOrdered</span><span>&quot;;
+</span><span>      </span><span style="color:#bf616a;">reason</span><span>: &quot;</span><span style="color:#a3be8c;">outOfStock</span><span>&quot;;
+</span><span>    }
+</span><span>  | {
+</span><span>      </span><span style="color:#bf616a;">outcome</span><span>: &quot;</span><span style="color:#a3be8c;">notOrdered</span><span>&quot;;
+</span><span>      </span><span style="color:#bf616a;">reason</span><span>: &quot;</span><span style="color:#a3be8c;">colorDoesNotExist</span><span>&quot;;
+</span><span>      </span><span style="color:#bf616a;">availableColors</span><span>: string[];
+</span><span>    }
+</span><span>  | {
+</span><span>      </span><span style="color:#bf616a;">outcome</span><span>: &quot;</span><span style="color:#a3be8c;">ordered</span><span>&quot;;
+</span><span>    };
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">orderItem </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">itemId</span><span>: string): Promise&lt;OrderItemResult&gt; </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>  </span><span style="color:#65737e;">// ...
+</span><span>};
+</span></code></pre>
+<ul>
+<li>The verb used in the method’s name is <code>order</code>, so the potential outcomes should be <strong>notOrdered</strong> or <strong>ordered</strong>.</li>
+<li>Avoid using generic terms like <strong>success</strong> or <strong>error</strong> and instead use specific terminology. For example, instead of <strong>success</strong>, use <strong>ordered</strong> as it provides better clarity about what has succeeded.</li>
+<li>When necessary, add context to provide additional information that may be useful for debugging or displaying a clear error message in the app, as it’s done for <code>availableColors</code>.</li>
+</ul>
+<h2 id="the-outcome-pattern-on-steroids-switch-guard">The Outcome Pattern on Steroids - Switch Guard</h2>
+<p>The switch guard is a robust structure that helps ensure that all
+potential cases are handled. Basically, It is a switch statement with
+a guard included in the default case. The guard is here to prevent the
+code from compiling if a case is left unhandled.</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">throwUnhandledOutcome </span><span>= (</span><span style="color:#bf616a;">result</span><span>: never) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>	</span><span style="color:#b48ead;">throw </span><span>new Error(&quot;</span><span style="color:#a3be8c;">Not handled case: </span><span>&quot; + JSON.</span><span style="color:#96b5b4;">stringify</span><span>(</span><span style="color:#bf616a;">result</span><span>));
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#8fa1b3;">someMethodInOurCode </span><span>= </span><span style="color:#b48ead;">async </span><span>() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>
+</span><span>	</span><span style="color:#65737e;">/* ... */
+</span><span>
+</span><span>	</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">result</span><span>: OrderItemResult = </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">orderItem</span><span>(</span><span style="color:#bf616a;">itemId</span><span>);
+</span><span>
+</span><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">result</span><span>.</span><span style="color:#bf616a;">outcome </span><span>=== &quot;</span><span style="color:#a3be8c;">notOrdered</span><span>&quot;) {
+</span><span>    </span><span style="color:#b48ead;">switch </span><span>(</span><span style="color:#bf616a;">result</span><span>.</span><span style="color:#bf616a;">reason</span><span>) {
+</span><span>      </span><span style="color:#b48ead;">case </span><span>&quot;</span><span style="color:#a3be8c;">itemNotFound</span><span>&quot;:
+</span><span>        </span><span style="color:#b48ead;">return </span><span style="color:#ebcb8b;">console</span><span>.</span><span style="color:#96b5b4;">error</span><span>(&quot;</span><span style="color:#a3be8c;">Item not found in catalog</span><span>&quot;);
+</span><span>      </span><span style="color:#b48ead;">case </span><span>&quot;</span><span style="color:#a3be8c;">outOfStock</span><span>&quot;:
+</span><span>        </span><span style="color:#b48ead;">return </span><span style="color:#ebcb8b;">console</span><span>.</span><span style="color:#96b5b4;">error</span><span>(&quot;</span><span style="color:#a3be8c;">Item is out of stock</span><span>&quot;);
+</span><span>      </span><span style="color:#b48ead;">case </span><span>&quot;</span><span style="color:#a3be8c;">colorDoesNotExist</span><span>&quot;:
+</span><span>        </span><span style="color:#b48ead;">return </span><span style="color:#ebcb8b;">console</span><span>.</span><span style="color:#96b5b4;">error</span><span>(
+</span><span>          \`</span><span style="color:#a3be8c;">Selected color is not available. Available colors: </span><span style="color:#96b5b4;">\$\{</span><span style="color:#a3be8c;">result.availableColors.join(
+</span><span style="color:#a3be8c;">            &quot;, &quot;
+</span><span style="color:#a3be8c;">          )}</span><span style="color:#96b5b4;">\`
+</span><span style="color:#a3be8c;">        );
+</span><span style="color:#a3be8c;">      default:
+</span><span style="color:#a3be8c;">        throwUnhandledOutcome(result);
+</span><span style="color:#a3be8c;">    }
+</span><span style="color:#a3be8c;">  }
+</span><span style="color:#a3be8c;">	/* here, handle the happy path */
+</span><span style="color:#a3be8c;">	/* ... */
+</span><span style="color:#a3be8c;">};
+</span></code></pre>
+<p>The function <code>throwUnhandledOutcome</code> has a parameter of type
+<code>never</code>. This means that during the build process, if TypeScript
+detects a case that ultimately falls into the default handler, the
+build will fail.</p>
+<p>If we remove the <code>outOfStock</code> case, we will receive the following
+error message:</p>
+<pre data-lang="ts" style="background-color:#2b303b;color:#c0c5ce;" class="language-ts "><code class="language-ts" data-lang="ts"><span>\`</span><span style="color:#a3be8c;">Argument of type &#39;{ outcome: &quot;notOrdered&quot;; reason: &quot;outOfStock&quot;; }&#39; is not assignable to parameter of type &#39;never&#39;</span><span style="color:#96b5b4;">\`
+</span></code></pre>
+<p>If the result of the <code>orderItem</code> method change, such as the
+addition of a new outcome, Typescript will ask us to handle the new
+outcome. If we don’t, the code will not build.</p>
+<p>This is the best way to make sure business errors are properly handled
+everywhere in our code.</p>
+
+        </div>
+    </article>
+</main>
+
+    
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2025 . All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
