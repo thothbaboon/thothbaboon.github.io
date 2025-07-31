@@ -12,7 +12,7 @@ Swing trader for vacations.
 
 While the world scrolls through shorts, I’m still over here writing stuff.
 
-## Articles
+## Posts
 - [Finance](/finance/)
 - [Brain Dump](/brain-dump/)
 - [Software Engineering](/software-engineering/)
